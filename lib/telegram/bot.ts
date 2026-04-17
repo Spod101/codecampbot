@@ -10,18 +10,149 @@ function db() {
 
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN!
 
-async function send(chatId: number, text: string) {
+type InlineKeyboardButton = { text: string; callback_data: string }
+type InlineKeyboardMarkup = { inline_keyboard: InlineKeyboardButton[][] }
+
+type PageView = 'status' | 'tasks' | 'risks' | 'kpis'
+
+type TgMessage = {
+  message_id: number
+  text?: string
+  chat: { id: number }
+}
+
+type TgCallbackQuery = {
+  id: string
+  data?: string
+  message?: TgMessage
+}
+
+type TgUpdate = {
+  message?: TgMessage
+  edited_message?: TgMessage
+  callback_query?: TgCallbackQuery
+}
+
+const PAGE_SIZE = 5
+
+async function send(chatId: number, text: string, replyMarkup?: InlineKeyboardMarkup) {
   await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML' }),
+    body: JSON.stringify({
+      chat_id: chatId,
+      text,
+      parse_mode: 'HTML',
+      ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
+    }),
   })
+}
+
+async function editMessage(chatId: number, messageId: number, text: string, replyMarkup?: InlineKeyboardMarkup) {
+  await fetch(`https://api.telegram.org/bot${TOKEN}/editMessageText`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: chatId,
+      message_id: messageId,
+      text,
+      parse_mode: 'HTML',
+      ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
+    }),
+  })
+}
+
+async function answerCallbackQuery(callbackQueryId: string) {
+  await fetch(`https://api.telegram.org/bot${TOKEN}/answerCallbackQuery`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ callback_query_id: callbackQueryId }),
+  })
+}
+
+function encodeFilter(filter?: string) {
+  if (!filter) return '-'
+  return filter.toLowerCase().slice(0, 20).replace(/[|]/g, '') || '-'
+}
+
+function decodeFilter(filter: string) {
+  return filter === '-' ? '' : filter
+}
+
+function callbackPayload(view: PageView, page: number, filter?: string) {
+  return `pg|${view}|${encodeFilter(filter)}|${page}`
+}
+
+function parseCallbackPayload(data: string): { view: PageView; page: number; filter: string } | null {
+  const parts = data.split('|')
+  if (parts.length !== 4 || parts[0] !== 'pg') return null
+
+  const view = parts[1] as PageView
+  if (!['status', 'tasks', 'risks', 'kpis'].includes(view)) return null
+
+  const page = Number.parseInt(parts[3], 10)
+  if (!Number.isFinite(page) || page < 0) return null
+
+  return {
+    view,
+    page,
+    filter: decodeFilter(parts[2]),
+  }
+}
+
+function pagerMarkup(view: PageView, page: number, totalPages: number, filter?: string): InlineKeyboardMarkup | undefined {
+  if (totalPages <= 1) return undefined
+
+  const prevPage = Math.max(0, page - 1)
+  const nextPage = Math.min(totalPages - 1, page + 1)
+
+  return {
+    inline_keyboard: [[
+      { text: '⬅️ Prev', callback_data: callbackPayload(view, prevPage, filter) },
+      { text: `${page + 1}/${totalPages}`, callback_data: callbackPayload(view, page, filter) },
+      { text: 'Next ➡️', callback_data: callbackPayload(view, nextPage, filter) },
+    ]],
+  }
+}
+
+function paginateLines(lines: string[], page: number) {
+  const totalPages = Math.max(1, Math.ceil(lines.length / PAGE_SIZE))
+  const safePage = Math.min(Math.max(page, 0), totalPages - 1)
+  const start = safePage * PAGE_SIZE
+  const end = start + PAGE_SIZE
+
+  return {
+    page: safePage,
+    totalPages,
+    lines: lines.slice(start, end),
+  }
+}
+
+async function sendOrEdit(
+  chatId: number,
+  text: string,
+  replyMarkup: InlineKeyboardMarkup | undefined,
+  editTarget?: { messageId: number }
+) {
+  if (editTarget) {
+    await editMessage(chatId, editTarget.messageId, text, replyMarkup)
+    return
+  }
+
+  await send(chatId, text, replyMarkup)
 }
 
 // ─── Entry point ────────────────────────────────────────────────────────────
 
 export async function handleUpdate(update: unknown) {
-  const msg = (update as any)?.message ?? (update as any)?.edited_message
+  const tgUpdate = (update ?? {}) as TgUpdate
+  const cb = tgUpdate.callback_query
+  if (cb?.data && cb?.id && cb?.message?.chat?.id && cb?.message?.message_id) {
+    await handleCallbackQuery(cb)
+    return
+  }
+
+  const msg = tgUpdate.message ?? tgUpdate.edited_message
   if (!msg?.text) return
 
   const chatId: number = msg.chat.id
@@ -46,6 +177,7 @@ export async function handleUpdate(update: unknown) {
       case 'addtask':   return await cmdAddTask(chatId, rest)
       case 'done':      return await cmdDoneTask(chatId, rest)
       case 'urgent':    return await cmdUrgentTask(chatId, rest)
+      case 'deltask':   return await cmdDelTask(chatId, rest)
       case 'addrisk':   return await cmdAddRisk(chatId, rest)
       case 'resolve':   return await cmdResolveRisk(chatId, rest)
       case 'setkpi':    return await cmdSetKpi(chatId, rest)
@@ -55,6 +187,41 @@ export async function handleUpdate(update: unknown) {
     console.error('[TelegramBot]', err)
     await send(chatId, `⚠️ ${err instanceof Error ? err.message : 'Unexpected error'}`)
   }
+}
+
+async function handleCallbackQuery(cb: TgCallbackQuery) {
+  if (!cb.data || !cb.message) {
+    await answerCallbackQuery(cb.id)
+    return
+  }
+
+  const payload = parseCallbackPayload(cb.data)
+  if (!payload) {
+    await answerCallbackQuery(cb.id)
+    return
+  }
+
+  const chatId: number = cb.message.chat.id
+  const messageId: number = cb.message.message_id
+
+  switch (payload.view) {
+    case 'status':
+      await cmdStatus(chatId, payload.page, { messageId })
+      break
+    case 'tasks':
+      await cmdTasks(chatId, payload.filter, payload.page, { messageId })
+      break
+    case 'risks':
+      await cmdRisks(chatId, payload.filter, payload.page, { messageId })
+      break
+    case 'kpis':
+      await cmdKpis(chatId, payload.page, { messageId })
+      break
+    default:
+      break
+  }
+
+  await answerCallbackQuery(cb.id)
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -106,7 +273,7 @@ async function cmdHelp(chatId: number) {
 
 // ─── /status ────────────────────────────────────────────────────────────────
 
-async function cmdStatus(chatId: number) {
+async function cmdStatus(chatId: number, page = 0, editTarget?: { messageId: number }) {
   const sb = db()
   const [{ data: chapters }, { data: tasks }, { data: risks }, { data: kpis }] = await Promise.all([
     sb.from('chapters').select('name, number, status, progress_percent').order('number'),
@@ -128,9 +295,11 @@ async function cmdStatus(chatId: number) {
 
   const chapterLines = (chapters ?? [])
     .map(c => `${statusIcon[c.status] ?? '•'} Ch${c.number} <b>${c.name}</b> — ${c.progress_percent}%`)
-    .join('\n')
+  const paged = paginateLines(chapterLines, page)
+  const chapterBlock = paged.lines.join('\n')
+  const keyboard = pagerMarkup('status', paged.page, paged.totalPages)
 
-  await send(chatId, `<b>🏕 Sui × DEVCON · Live Status</b>
+  await sendOrEdit(chatId, `<b>🏕 Sui × DEVCON · Live Status</b>
 
 <b>KPIs</b>
 • Code Camps: <code>${kpiMap['code_camps'] ?? '–'}</code>
@@ -140,13 +309,15 @@ async function cmdStatus(chatId: number) {
 <b>Tasks</b>  Open: <b>${openTasks}</b>${urgentTasks > 0 ? `   🔴 Urgent: <b>${urgentTasks}</b>` : ''}
 <b>Risks</b>  Open: <b>${openRisks}</b>${highRisks > 0 ? `   🔴 High: <b>${highRisks}</b>` : ''}
 
-<b>Chapters</b>
-${chapterLines}`)
+<b>Chapters</b> ${paged.totalPages > 1 ? `(Page ${paged.page + 1}/${paged.totalPages})` : ''}
+${chapterBlock || 'No chapters found.'}`,
+  keyboard,
+  editTarget)
 }
 
 // ─── /tasks ─────────────────────────────────────────────────────────────────
 
-async function cmdTasks(chatId: number, filter: string) {
+async function cmdTasks(chatId: number, filter: string, page = 0, editTarget?: { messageId: number }) {
   const sb = db()
   let query = sb
     .from('chapter_tasks')
@@ -165,14 +336,22 @@ async function cmdTasks(chatId: number, filter: string) {
   const lines = tasks.map(t => {
     const icon = t.status === 'urgent' ? '🔴' : '🟡'
     return `${icon} <b>${t.owner}</b>: ${t.description}\n   <code>${t.id.slice(0, 8)}</code> · ${t.chapter_id}`
-  }).join('\n\n')
+  })
 
-  await send(chatId, `<b>📋 Open Tasks${filter ? ` · ${filter}` : ''}</b> (${tasks.length})\n\n${lines}`)
+  const paged = paginateLines(lines, page)
+  const keyboard = pagerMarkup('tasks', paged.page, paged.totalPages, filter)
+
+  await sendOrEdit(
+    chatId,
+    `<b>📋 Open Tasks${filter ? ` · ${filter}` : ''}</b> (${tasks.length}) ${paged.totalPages > 1 ? `· Page ${paged.page + 1}/${paged.totalPages}` : ''}\n\n${paged.lines.join('\n\n')}`,
+    keyboard,
+    editTarget
+  )
 }
 
 // ─── /risks ─────────────────────────────────────────────────────────────────
 
-async function cmdRisks(chatId: number, filter: string) {
+async function cmdRisks(chatId: number, filter: string, page = 0, editTarget?: { messageId: number }) {
   const sb = db()
   let query = sb
     .from('risks')
@@ -193,9 +372,17 @@ async function cmdRisks(chatId: number, filter: string) {
   const sevIcon: Record<string, string> = { high: '🔴', medium: '🟡', low: '🟢' }
   const lines = risks.map(r =>
     `${sevIcon[r.severity]} <b>${r.code}: ${r.title}</b>\n   ${r.chapter_tag} · ${r.owner}\n   <code>${r.id.slice(0, 8)}</code>`
-  ).join('\n\n')
+  )
 
-  await send(chatId, `<b>⚠️ Open Risks${filter ? ` · ${filter}` : ''}</b> (${risks.length})\n\n${lines}`)
+  const paged = paginateLines(lines, page)
+  const keyboard = pagerMarkup('risks', paged.page, paged.totalPages, sev)
+
+  await sendOrEdit(
+    chatId,
+    `<b>⚠️ Open Risks${filter ? ` · ${filter}` : ''}</b> (${risks.length}) ${paged.totalPages > 1 ? `· Page ${paged.page + 1}/${paged.totalPages}` : ''}\n\n${paged.lines.join('\n\n')}`,
+    keyboard,
+    editTarget
+  )
 }
 
 // ─── /chapter ───────────────────────────────────────────────────────────────
@@ -237,13 +424,21 @@ ${taskLines}`)
 
 // ─── /kpis ──────────────────────────────────────────────────────────────────
 
-async function cmdKpis(chatId: number) {
+async function cmdKpis(chatId: number, page = 0, editTarget?: { messageId: number }) {
   const { data: kpis } = await db().from('kpis').select('key, label, value, sublabel')
 
   if (!kpis?.length) { await send(chatId, 'No KPIs found.'); return }
 
-  const lines = kpis.map(k => `• <b>${k.label}</b>: <code>${k.value}</code>\n  <i>${k.sublabel}</i>`).join('\n\n')
-  await send(chatId, `<b>📊 KPIs</b>\n\n${lines}`)
+  const lines = kpis.map(k => `• <b>${k.label}</b>: <code>${k.value}</code>\n  <i>${k.sublabel}</i>`)
+  const paged = paginateLines(lines, page)
+  const keyboard = pagerMarkup('kpis', paged.page, paged.totalPages)
+
+  await sendOrEdit(
+    chatId,
+    `<b>📊 KPIs</b> ${paged.totalPages > 1 ? `· Page ${paged.page + 1}/${paged.totalPages}` : ''}\n\n${paged.lines.join('\n\n')}`,
+    keyboard,
+    editTarget
+  )
 }
 
 // ─── /addtask ───────────────────────────────────────────────────────────────
