@@ -1,0 +1,79 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-sui-blue: #4DA2FF;
+  --color-sui-teal: #00D4AA;
+  --color-bg: #080C14;
+  --color-bg2: #0D1420;
+  --color-bg3: #131C2E;
+  --color-border: rgba(77,162,255,0.15);
+  --color-border-bright: rgba(77,162,255,0.4);
+  --color-text-main: #E8F0FF;
+  --color-text-dim: #7A8BA8;
+  --color-red: #FF4D6A;
+  --color-yellow: #FFB547;
+  --color-green: #00D4AA;
+  --font-sans: 'Syne', sans-serif;
+  --font-mono: 'Space Mono', monospace;
+}
+
+:root {
+  --sui-blue: #4DA2FF;
+  --sui-teal: #00D4AA;
+  --bg: #080C14;
+  --bg2: #0D1420;
+  --bg3: #131C2E;
+  --border: rgba(77,162,255,0.15);
+  --border-bright: rgba(77,162,255,0.4);
+  --text: #E8F0FF;
+  --text-dim: #7A8BA8;
+  --red: #FF4D6A;
+  --yellow: #FFB547;
+  --green: #00D4AA;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(77,162,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(77,162,255,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+.animate-fade-in { animation: fadeIn .3s ease; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: rgba(77,162,255,0.3); border-radius: 3px; }
+
+/* Progress bar */
+.progress-bar {
+  height: 5px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--sui-blue), var(--sui-teal));
+}
