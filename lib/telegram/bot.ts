@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { buildDsuMessage } from '@/lib/telegram/dsu'
 
 // Service-role client — bypasses RLS for server-side writes
 function db() {
@@ -169,6 +170,7 @@ export async function handleUpdate(update: unknown) {
     switch (cmd) {
       case 'start':
       case 'help':      return await cmdHelp(chatId)
+      case 'standup':   return await cmdStandup(chatId)
       case 'status':    return await cmdStatus(chatId)
       case 'tasks':     return await cmdTasks(chatId, rest)
       case 'risks':     return await cmdRisks(chatId, rest)
@@ -177,7 +179,6 @@ export async function handleUpdate(update: unknown) {
       case 'addtask':   return await cmdAddTask(chatId, rest)
       case 'done':      return await cmdDoneTask(chatId, rest)
       case 'urgent':    return await cmdUrgentTask(chatId, rest)
-      case 'deltask':   return await cmdDelTask(chatId, rest)
       case 'addrisk':   return await cmdAddRisk(chatId, rest)
       case 'resolve':   return await cmdResolveRisk(chatId, rest)
       case 'setkpi':    return await cmdSetKpi(chatId, rest)
@@ -246,6 +247,7 @@ async function cmdHelp(chatId: number) {
   await send(chatId, `<b>📋 DEVCON × Sui Tracker Bot</b>
 
 <b>📊 View</b>
+/standup — post today's DSU to the chat
 /status — overall dashboard
 /tasks [chapter?] — open tasks
 /risks [high|medium|low?] — risk register
@@ -257,7 +259,6 @@ async function cmdHelp(chatId: number) {
   <i>e.g.</i> <code>/addtask bukidnon Zhi Confirm lab setup</code>
 /done [id] — mark done
 /urgent [id] — mark urgent
-/deltask [id] — delete task
 
 <b>⚠️ Risks</b>
 /addrisk [severity] [chapter] [title] | [description]
@@ -269,6 +270,13 @@ async function cmdHelp(chatId: number) {
   <i>e.g.</i> <code>/setkpi code_camps 2/5</code>
 
 <i>Task/risk IDs are shown as 8-char codes. You only need the first 6–8 chars to identify one.</i>`)
+}
+
+// ─── /standup ───────────────────────────────────────────────────────────────
+
+async function cmdStandup(chatId: number) {
+  const text = await buildDsuMessage()
+  await send(chatId, text)
 }
 
 // ─── /status ────────────────────────────────────────────────────────────────
@@ -499,21 +507,6 @@ async function cmdUrgentTask(chatId: number, prefix: string) {
 
   await sb.from('chapter_tasks').update({ status: 'urgent' }).eq('id', found.result.id)
   await send(chatId, `🔴 Urgent: <b>${found.result.owner}</b>: ${found.result.description}`)
-}
-
-// ─── /deltask ───────────────────────────────────────────────────────────────
-
-async function cmdDelTask(chatId: number, prefix: string) {
-  if (!prefix) { await send(chatId, 'Usage: /deltask [task-id]'); return }
-
-  const sb = db()
-  const { data: all } = await sb.from('chapter_tasks').select('id, owner, description, chapter_id')
-  const found = await findByPrefix(all ?? [], prefix)
-
-  if ('error' in found) { await send(chatId, found.error); return }
-
-  await sb.from('chapter_tasks').delete().eq('id', found.result.id)
-  await send(chatId, `🗑 Deleted: <b>${found.result.owner}</b>: ${found.result.description}`)
 }
 
 // ─── /addrisk ───────────────────────────────────────────────────────────────
