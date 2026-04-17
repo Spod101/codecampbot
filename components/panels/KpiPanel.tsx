@@ -1,115 +1,118 @@
 import { PAX_ROWS } from '@/lib/data'
 import KpiTile from '@/components/ui/KpiTile'
-import SectionTitle from '@/components/ui/SectionTitle'
-import Card from '@/components/ui/Card'
+import PanelHeader from '@/components/ui/PanelHeader'
 import Badge from '@/components/ui/Badge'
 import type { Chapter, Kpi, BadgeVariant } from '@/lib/types'
 
 const statusBadge: Record<string, { variant: BadgeVariant; label: string }> = {
-  completed:     { variant: 'done', label: '✓ Completed' },
-  rescheduling:  { variant: 'warn', label: '⚠ Rescheduling' },
-  in_progress:   { variant: 'pending', label: '⚠ In Progress' },
-  pencil_booked: { variant: 'warn', label: '📌 Pencil-booked' },
-  tbc:           { variant: 'tbc', label: '⚠ TBC / At Risk' },
-  activating:    { variant: 'warn', label: '⚠ Activating' },
+  completed:     { variant: 'done',    label: '✓ Done'          },
+  rescheduling:  { variant: 'warn',    label: '⚠ Rescheduling'  },
+  in_progress:   { variant: 'pending', label: '🔄 Active'       },
+  pencil_booked: { variant: 'warn',    label: '📌 Pencil-booked' },
+  tbc:           { variant: 'tbc',     label: 'TBC'             },
+  activating:    { variant: 'warn',    label: '⚠ Activating'    },
 }
 
-interface Props {
-  kpis: Kpi[]
-  chapters: Chapter[]
+const accentOf = (c: Chapter) =>
+  c.color === 'teal' ? '#14b8a6' : c.color === 'yellow' ? '#f59e0b' : c.color === 'purple' ? '#a78bfa' : '#06b6d4'
+
+const CARD: React.CSSProperties = {
+  display: 'grid', gridTemplateColumns: '28px 1fr auto auto', gap: '14px',
+  alignItems: 'center', padding: '16px 18px',
+  background: '#0f172a', border: '1px solid #1e293b', borderRadius: '14px',
+  transition: 'border-color .2s',
 }
 
-export default function KpiPanel({ kpis, chapters }: Props) {
+export default function KpiPanel({ kpis, chapters }: { kpis: Kpi[]; chapters: Chapter[] }) {
+  const done    = chapters.filter(c => c.status === 'completed').length
+  const active  = chapters.filter(c => ['in_progress','activating','pencil_booked'].includes(c.status)).length
+  const atRisk  = chapters.filter(c => ['rescheduling','tbc'].includes(c.status)).length
+
   return (
-    <div className="animate-fade-in">
-      {/* KPI Tiles */}
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(130px,1fr))] gap-[10px] mb-6">
+    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+      <PanelHeader eyebrow="Q2 2026" title="KPI Dashboard" subtitle="Key performance indicators and chapter schedule." />
+
+      {/* KPI metric tiles */}
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(130px,1fr))] gap-3">
         {kpis.map(k => (
           <KpiTile key={k.id} value={k.value} label={k.label} sublabel={k.sublabel} color={k.color} />
         ))}
       </div>
 
-      {/* National Pax KPI */}
-      <SectionTitle>National Pax KPI — MOU Progress</SectionTitle>
-      <Card className="mb-5">
-        <div className="flex items-center justify-between mb-[18px] flex-wrap gap-3">
+      {/* Pax tracker */}
+      <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '18px', padding: '28px' }}>
+        <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#64748b', marginBottom: '16px' }}>
+          National Pax — MOU Target: 500
+        </p>
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: '20px', marginBottom: '24px' }}>
           <div>
-            <div className="font-mono font-extrabold leading-none text-[#4DA2FF]" style={{ fontSize: 44 }}>
-              0<span className="text-[24px] text-[#7A8BA8]"> / 600</span>
-            </div>
-            <div className="text-[10px] text-[#7A8BA8] uppercase tracking-[0.08em] mt-1">Total Participants Logged · MOU Minimum: 500</div>
+            <span style={{ fontSize: '52px', fontWeight: 800, color: '#06b6d4', lineHeight: 1 }}>0</span>
+            <span style={{ fontSize: '22px', fontWeight: 600, color: '#1e293b', marginLeft: '6px' }}>/ 600</span>
           </div>
-          <div className="flex gap-4 flex-wrap">
-            {[{ val: '1', lbl: 'Done', color: '#00D4AA' }, { val: '3', lbl: 'Q2 Active', color: '#FFB547' }, { val: '1', lbl: 'Q3 Pending', color: '#4DA2FF' }, { val: '1', lbl: 'TBC', color: '#A78BFA' }].map(s => (
-              <div key={s.lbl} className="text-center">
-                <div className="text-[22px] font-extrabold font-mono" style={{ color: s.color }}>{s.val}</div>
-                <div className="text-[9px] text-[#7A8BA8] uppercase tracking-[0.06em]">{s.lbl}</div>
+          <div style={{ display: 'flex', gap: '28px' }}>
+            {[
+              { val: String(done),   lbl: 'Done',       color: '#14b8a6' },
+              { val: String(active), lbl: 'Active',     color: '#f59e0b' },
+              { val: String(atRisk), lbl: 'At Risk',    color: '#e11d48' },
+              { val: '1',            lbl: 'Q3 Pending', color: '#a78bfa' },
+            ].map(s => (
+              <div key={s.lbl} style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '22px', fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.val}</div>
+                <div style={{ fontSize: '9px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: '4px' }}>{s.lbl}</div>
               </div>
             ))}
           </div>
         </div>
-        <div className="mb-[7px]">
-          <div className="flex justify-between text-[10px] text-[#7A8BA8] mb-1 font-mono"><span>MOU Minimum (500 pax)</span><span>0 / 500</span></div>
-          <div className="progress-bar"><div className="progress-fill" style={{ width: '0%' }} /></div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {[
+            { label: 'MOU Minimum', target: 500, color: '#06b6d4' },
+            { label: 'Full Target',  target: 600, color: '#14b8a6' },
+          ].map(bar => (
+            <div key={bar.label}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                <span>{bar.label}</span><span style={{ color: bar.color, fontWeight: 700 }}>0 / {bar.target}</span>
+              </div>
+              <div style={{ height: '5px', background: '#1e293b', borderRadius: '4px' }}>
+                <div style={{ height: '100%', borderRadius: '4px', background: `linear-gradient(90deg, ${bar.color}, ${bar.color}88)`, width: '0%' }} />
+              </div>
+            </div>
+          ))}
         </div>
-        <div>
-          <div className="flex justify-between text-[10px] text-[#7A8BA8] mb-1 font-mono"><span>Projected Target (600 pax)</span><span>0 / 600</span></div>
-          <div className="progress-bar"><div className="progress-fill" style={{ width: '0%', background: 'linear-gradient(90deg,#00D4AA,#00ffcc)' }} /></div>
+        <div style={{ marginTop: '16px', display: 'flex', gap: '8px', padding: '10px 14px', background: 'rgba(225,29,72,0.06)', border: '1px solid rgba(225,29,72,0.18)', borderRadius: '10px', fontSize: '11px', color: '#94a3b8' }}>
+          <span style={{ color: '#e11d48', flexShrink: 0 }}>⚠</span>
+          <span><strong style={{ color: '#e11d48' }}>Action:</strong> Log Manila actual pax count. All chapters report within T+3 days of event.</span>
         </div>
-        <div className="mt-3 p-[10px_13px] bg-[rgba(255,77,106,0.07)] border border-[rgba(255,77,106,0.2)] rounded-md text-[11px] text-[#7A8BA8]">
-          ⚠ <strong className="text-[#FF4D6A]">ACTION REQUIRED:</strong> Log Manila actual pax count. All chapters report within T+3 days of event.
-        </div>
-      </Card>
+      </div>
 
-      {/* Per-Event Pax Breakdown */}
-      <SectionTitle>Per-Event Pax Breakdown</SectionTitle>
-      <Card className="mb-5">
-        {PAX_ROWS.map((row, i) => (
-          <div key={i} className="grid grid-cols-[160px_1fr_70px] gap-3 items-center py-3 border-b border-[rgba(77,162,255,0.06)] last:border-b-0 max-[600px]:grid-cols-1">
-            <div>
-              <div className="text-[12px] font-semibold">{row.chapter_name}</div>
-              <div className="font-mono text-[10px] text-[#7A8BA8] mt-0.5">{row.date_text}</div>
-            </div>
-            <div>
-              <div className="progress-bar"><div className="progress-fill" style={{ width: '0%' }} /></div>
-              <div className="font-mono text-[10px] mt-0.5" style={{ color: row.note_color }}>{row.note}</div>
-            </div>
-            <div className="font-mono text-[12px] text-right text-[#4DA2FF]">
-              {row.actual ?? '–'}<br /><span className="text-[9px] text-[#7A8BA8]">/ {row.target ?? 'TBC'}</span>
-            </div>
-          </div>
-        ))}
-      </Card>
-
-      {/* Master Schedule Table */}
-      <SectionTitle>Master Schedule</SectionTitle>
-      <div className="overflow-x-auto border border-[rgba(77,162,255,0.15)] rounded-lg mb-5">
-        <table className="w-full border-collapse text-[12px]">
-          <thead>
-            <tr className="bg-[#131C2E]">
-              {['#', 'Date', 'Chapter', 'Lead', 'Venue', 'Pax Target', 'Countdown', 'Status'].map(h => (
-                <th key={h} className="p-[10px_13px] text-left text-[9px] font-bold uppercase tracking-[0.1em] text-[#7A8BA8] font-mono border-b border-[rgba(77,162,255,0.15)] whitespace-nowrap">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {chapters.map(c => {
-              const b = statusBadge[c.status]
-              return (
-                <tr key={c.id} className="hover:[&>td]:bg-[rgba(77,162,255,0.03)] transition-colors">
-                  <td className="p-[10px_13px] border-b border-[rgba(77,162,255,0.06)] font-mono">{c.number}</td>
-                  <td className="p-[10px_13px] border-b border-[rgba(77,162,255,0.06)] font-mono text-[11px]" style={{ color: c.status === 'rescheduling' || c.status === 'tbc' ? '#FFB547' : undefined }}>{c.date_text}</td>
-                  <td className="p-[10px_13px] border-b border-[rgba(77,162,255,0.06)]"><strong>{c.name}</strong></td>
-                  <td className="p-[10px_13px] border-b border-[rgba(77,162,255,0.06)] text-[#7A8BA8] text-[11px]">{c.lead_name}</td>
-                  <td className="p-[10px_13px] border-b border-[rgba(77,162,255,0.06)] text-[#7A8BA8] text-[11px]">{c.venue}</td>
-                  <td className="p-[10px_13px] border-b border-[rgba(77,162,255,0.06)] font-mono">{c.pax_target ?? 'TBC'}</td>
-                  <td className="p-[10px_13px] border-b border-[rgba(77,162,255,0.06)] font-mono text-[10px] text-[#7A8BA8]">{c.countdown_text}</td>
-                  <td className="p-[10px_13px] border-b border-[rgba(77,162,255,0.06)]"><Badge variant={b.variant}>{b.label}</Badge></td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
+      {/* Chapter schedule — card rows */}
+      <div>
+        <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#64748b', marginBottom: '14px' }}>Chapter Schedule</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {chapters.map(c => {
+            const b      = statusBadge[c.status]
+            const accent = accentOf(c)
+            const pax    = PAX_ROWS.find(p => p.chapter_name.toLowerCase().includes(c.city.toLowerCase()))
+            return (
+              <div key={c.id} style={{ ...CARD, borderLeft: `3px solid ${accent}` }}
+                onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(6,182,212,0.35)')}
+                onMouseLeave={e => (e.currentTarget.style.borderColor = '#1e293b')}>
+                <span style={{ fontSize: '10px', fontWeight: 700, color: '#475569', fontFamily: 'monospace' }}>{c.number}</span>
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#f8fafc', marginBottom: '2px' }}>{c.name}</div>
+                  <div style={{ fontSize: '11px', color: '#64748b' }}>{c.venue.split(',')[0]} · {c.lead_name.split('&')[0].trim()}</div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 700, color: accent }}>{c.pax_target ?? 'TBC'}</div>
+                  <div style={{ fontSize: '9px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: '2px' }}>target pax</div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                  <Badge variant={b.variant}>{b.label}</Badge>
+                  <span style={{ fontSize: '9px', color: '#475569' }}>{c.countdown_text}</span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
       </div>
     </div>
   )

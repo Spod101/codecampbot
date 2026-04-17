@@ -1,105 +1,136 @@
 'use client'
-import SectionTitle from '@/components/ui/SectionTitle'
+import PanelHeader from '@/components/ui/PanelHeader'
 import Badge from '@/components/ui/Badge'
 import ProgressBar from '@/components/ui/ProgressBar'
-import Card from '@/components/ui/Card'
 import type { Chapter, BadgeVariant } from '@/lib/types'
 
 const statusBadge: Record<string, { variant: BadgeVariant; label: string }> = {
-  completed:     { variant: 'done', label: '✓ Completed' },
-  rescheduling:  { variant: 'warn', label: '⚠ Rescheduling' },
-  in_progress:   { variant: 'pending', label: '⚠ In Progress' },
-  pencil_booked: { variant: 'warn', label: '📌 Pencil-booked' },
-  tbc:           { variant: 'tbc', label: 'TBC / At Risk Cancel' },
-  activating:    { variant: 'warn', label: '⚠ Activating' },
+  completed:     { variant: 'done',    label: '✓ Completed'     },
+  rescheduling:  { variant: 'warn',    label: '⚠ Rescheduling'  },
+  in_progress:   { variant: 'pending', label: '🔄 In Progress'  },
+  pencil_booked: { variant: 'warn',    label: '📌 Pencil-booked' },
+  tbc:           { variant: 'tbc',     label: 'TBC / At Risk'   },
+  activating:    { variant: 'warn',    label: '⚠ Activating'    },
 }
 
-function getMerchBadge(merch_status: string): { variant: BadgeVariant; label: string } {
-  if (merch_status.startsWith('✓')) return { variant: 'done', label: merch_status }
-  if (merch_status.includes('TBC') || merch_status.toLowerCase().includes('tbc')) return { variant: 'tbc', label: merch_status }
-  if (merch_status.includes('Not Yet')) return { variant: 'risk', label: merch_status }
-  return { variant: 'warn', label: merch_status }
+function getMerchBadge(s: string): { variant: BadgeVariant; label: string } {
+  if (s.startsWith('✓'))                                     return { variant: 'done', label: s }
+  if (s.includes('TBC') || s.toLowerCase().includes('tbc')) return { variant: 'tbc',  label: s }
+  if (s.includes('Not Yet'))                                 return { variant: 'risk', label: s }
+  return                                                            { variant: 'warn', label: s }
 }
 
-interface Props {
-  chapters: Chapter[]
-  onShowChapter: (id: string) => void
-}
+const accentOf = (c: Chapter) =>
+  c.color === 'teal' ? '#14b8a6' : c.color === 'yellow' ? '#f59e0b' : c.color === 'purple' ? '#a78bfa' : '#06b6d4'
 
-export default function ChaptersPanel({ chapters, onShowChapter }: Props) {
+const STAT_COLORS = [
+  { color: '#14b8a6', bg: 'rgba(20,184,166,0.06)',  border: 'rgba(20,184,166,0.2)'  },
+  { color: '#f59e0b', bg: 'rgba(245,158,11,0.06)',  border: 'rgba(245,158,11,0.2)'  },
+  { color: '#e11d48', bg: 'rgba(225,29,72,0.06)',   border: 'rgba(225,29,72,0.2)'   },
+  { color: '#a78bfa', bg: 'rgba(167,139,250,0.06)', border: 'rgba(167,139,250,0.2)' },
+]
+
+export default function ChaptersPanel({ chapters, onShowChapter }: { chapters: Chapter[]; onShowChapter: (id: string) => void }) {
+  const done   = chapters.filter(c => c.status === 'completed').length
+  const active = chapters.filter(c => ['in_progress','activating','pencil_booked'].includes(c.status)).length
+  const resch  = chapters.filter(c => c.status === 'rescheduling').length
+  const tbc    = chapters.filter(c => c.status === 'tbc').length
+
+  const stats = [
+    { n: done,         lbl: 'Completed',    dot: '🟢' },
+    { n: active,       lbl: 'Active',       dot: '🔄' },
+    { n: resch,        lbl: 'Rescheduling', dot: '⚠' },
+    { n: tbc,          lbl: 'TBC / At Risk',dot: '🟣' },
+  ]
+
   return (
-    <div className="animate-fade-in">
-      <div className="bg-[rgba(77,162,255,0.06)] border border-[rgba(77,162,255,0.2)] rounded-lg p-[11px_14px] text-[12px] text-[#7A8BA8] leading-[1.7] mb-4">
-        <strong className="text-[#4DA2FF]">Click any chapter tab</strong> (teal buttons in the nav) for the full individual chapter page. Below is the summary overview. Mike and Lady are actively updating code camp content and installation guide based on Letran pilot learnings.
-      </div>
+    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+      <PanelHeader
+        eyebrow="Q2 2026"
+        title="All Chapters"
+        subtitle={`${chapters.length} chapters across the Philippines.`}
+        right={
+          <span style={{ fontSize: '12px', color: '#64748b', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '999px', padding: '4px 12px' }}>
+            Click any chapter to open detail
+          </span>
+        }
+      />
 
-      {/* Summary Table */}
-      <div className="overflow-x-auto border border-[rgba(77,162,255,0.15)] rounded-lg mb-6">
-        <table className="w-full border-collapse text-[12px]">
-          <thead>
-            <tr className="bg-[#131C2E]">
-              {['#', 'Chapter', 'Lead', 'Date', 'Venue', 'Target', 'Countdown', 'Merch', 'Status'].map(h => (
-                <th key={h} className="p-[10px_13px] text-left text-[9px] font-bold uppercase tracking-[0.1em] text-[#7A8BA8] font-mono border-b border-[rgba(77,162,255,0.15)] whitespace-nowrap">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {chapters.map(c => {
-              const b = statusBadge[c.status]
-              const m = getMerchBadge(c.merch_status)
-              return (
-                <tr key={c.id} className="cursor-pointer hover:[&>td]:bg-[rgba(77,162,255,0.03)]" onClick={() => onShowChapter(c.id)}>
-                  <td className="p-[10px_13px] border-b border-[rgba(77,162,255,0.06)] font-mono">{c.number}</td>
-                  <td className="p-[10px_13px] border-b border-[rgba(77,162,255,0.06)]"><strong>{c.name}</strong></td>
-                  <td className="p-[10px_13px] border-b border-[rgba(77,162,255,0.06)] text-[#7A8BA8] text-[11px]">{c.lead_name}</td>
-                  <td className="p-[10px_13px] border-b border-[rgba(77,162,255,0.06)] font-mono text-[11px]">{c.date_text}</td>
-                  <td className="p-[10px_13px] border-b border-[rgba(77,162,255,0.06)] text-[#7A8BA8] text-[11px]">{c.venue.split(',')[0]}</td>
-                  <td className="p-[10px_13px] border-b border-[rgba(77,162,255,0.06)] font-mono">{c.pax_target ?? 'TBC'}</td>
-                  <td className="p-[10px_13px] border-b border-[rgba(77,162,255,0.06)] font-mono text-[10px] text-[#7A8BA8]">{c.countdown_text}</td>
-                  <td className="p-[10px_13px] border-b border-[rgba(77,162,255,0.06)]"><Badge variant={m.variant}>{m.label}</Badge></td>
-                  <td className="p-[10px_13px] border-b border-[rgba(77,162,255,0.06)]"><Badge variant={b.variant}>{b.label}</Badge></td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Chapter Quick Cards */}
-      <SectionTitle>Chapter Detail Cards</SectionTitle>
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-[12px]">
-        {chapters.map(c => {
-          const b = statusBadge[c.status]
-          const labelColor = c.color === 'blue' ? '#4DA2FF' : c.color === 'teal' ? '#00D4AA' : c.color === 'yellow' ? '#FFB547' : '#A78BFA'
+      {/* Stat tiles */}
+      <div className="grid grid-cols-4 gap-3">
+        {stats.map((s, i) => {
+          const c = STAT_COLORS[i]
           return (
-            <Card key={c.id} className="cursor-pointer" >
-              <div onClick={() => onShowChapter(c.id)}>
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <div className="font-mono text-[10px] mb-0.5" style={{ color: labelColor }}>CHAPTER {c.number}</div>
-                    <div className="text-[15px] font-extrabold text-white">{c.name}</div>
-                    <div className="font-mono text-[10px] text-[#7A8BA8] mt-0.5">{c.lead_name}</div>
-                  </div>
-                  <Badge variant={b.variant}>{b.label}</Badge>
-                </div>
-                <div className="font-mono text-[11px] mb-1.5" style={{ color: labelColor }}>{c.date_text}</div>
-                <div className="font-mono text-[10px] text-[#7A8BA8] mb-2">{c.venue}</div>
-                <ProgressBar percent={c.progress_percent} color={c.color === 'yellow' ? 'yellow' : c.color === 'teal' ? 'teal' : c.color === 'purple' ? 'purple' : 'default'} />
-                <div className="font-mono text-[10px] text-[#7A8BA8] mt-1">{c.countdown_text}</div>
+            <div key={s.lbl} style={{ background: c.bg, border: `1px solid ${c.border}`, borderRadius: '16px', padding: '20px', textAlign: 'center' }}>
+              <div style={{ fontSize: '34px', fontWeight: 800, color: c.color, lineHeight: 1 }}>{s.n}</div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', marginTop: '8px' }}>
+                <span style={{ fontSize: '10px' }}>{s.dot}</span>
+                <span style={{ fontSize: '9px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700 }}>{s.lbl}</span>
               </div>
-              {c.todos.length > 0 && (
-                <div className="border-t border-[rgba(77,162,255,0.1)] mt-3 pt-3 flex flex-col gap-1">
-                  {c.todos.slice(0, 2).map(t => (
-                    <div key={t.id} className="flex items-start gap-1.5 text-[11px]">
-                      <span className={`flex-shrink-0 font-bold ${t.status === 'urgent' ? 'text-[#FF4D6A]' : 'text-[#FFB547]'}`}>→</span>
-                      <span className="text-[#7A8BA8]"><strong className="text-[#E8F0FF]">{t.owner}:</strong> {t.description}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Card>
+            </div>
           )
         })}
+      </div>
+
+      {/* Chapter card rows */}
+      <div>
+        <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#64748b', marginBottom: '14px' }}>Chapter Overview</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {chapters.map(c => {
+            const b      = statusBadge[c.status]
+            const m      = getMerchBadge(c.merch_status)
+            const accent = accentOf(c)
+            return (
+              <div
+                key={c.id}
+                onClick={() => onShowChapter(c.id)}
+                style={{ display: 'grid', gridTemplateColumns: '28px 1fr auto auto', gap: '14px', alignItems: 'center', padding: '16px 18px', background: '#0f172a', border: '1px solid #1e293b', borderLeft: `3px solid ${accent}`, borderRadius: '14px', cursor: 'pointer', transition: 'border-color .2s' }}
+                onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(6,182,212,0.35)')}
+                onMouseLeave={e => { e.currentTarget.style.borderLeft = `3px solid ${accent}`; e.currentTarget.style.borderColor = '#1e293b' }}
+              >
+                <span style={{ fontSize: '10px', fontWeight: 700, color: '#475569', fontFamily: 'monospace' }}>{c.number}</span>
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#f8fafc', marginBottom: '3px' }}>{c.name}</div>
+                  <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '8px' }}>
+                    {c.lead_name.split('&')[0].trim()} · {c.venue.split(',')[0]}
+                  </div>
+                  <ProgressBar
+                    percent={c.progress_percent}
+                    color={c.color === 'yellow' ? 'yellow' : c.color === 'teal' ? 'teal' : c.color === 'purple' ? 'purple' : 'default'}
+                  />
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 700, color: accent }}>{c.pax_target ?? 'TBC'}</div>
+                  <div style={{ fontSize: '9px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: '2px' }}>target pax</div>
+                  <div style={{ fontSize: '9px', color: '#475569', marginTop: '6px' }}>{c.countdown_text}</div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '5px' }}>
+                  <Badge variant={b.variant}>{b.label}</Badge>
+                  <Badge variant={m.variant}>{m.label}</Badge>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Quick nav */}
+      <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', padding: '20px' }}>
+        <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#64748b', marginBottom: '12px' }}>Quick Navigation</p>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          {chapters.map(c => {
+            const accent = accentOf(c)
+            return (
+              <button key={c.id} onClick={() => onShowChapter(c.id)}
+                style={{ padding: '7px 14px', borderRadius: '10px', fontSize: '11px', fontWeight: 700, background: `${accent}14`, border: `1px solid ${accent}40`, color: accent, cursor: 'pointer', transition: 'all .2s' }}
+                onMouseEnter={e => (e.currentTarget.style.background = `${accent}25`)}
+                onMouseLeave={e => (e.currentTarget.style.background = `${accent}14`)}
+              >
+                Ch{c.number} {c.city}
+              </button>
+            )
+          })}
+        </div>
       </div>
     </div>
   )

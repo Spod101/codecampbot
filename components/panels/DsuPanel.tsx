@@ -7,225 +7,211 @@ import Badge from '@/components/ui/Badge'
 import type { Chapter, Kpi, BadgeVariant } from '@/lib/types'
 
 const statusBadge: Record<string, { variant: BadgeVariant; label: string }> = {
-  completed:     { variant: 'done', label: '✓ Done' },
-  rescheduling:  { variant: 'warn', label: '⚠ Rescheduling' },
-  in_progress:   { variant: 'pending', label: '🔄 In Progress' },
-  pencil_booked: { variant: 'warn', label: '📌 Pencil-booked' },
-  tbc:           { variant: 'tbc', label: 'TBC' },
-  activating:    { variant: 'warn', label: '⚠ Activating' },
+  completed:     { variant: 'done',    label: '✓ Done'           },
+  rescheduling:  { variant: 'warn',    label: '⚠ Rescheduling'   },
+  in_progress:   { variant: 'pending', label: '🔄 In Progress'   },
+  pencil_booked: { variant: 'warn',    label: '📌 Pencil-booked'  },
+  tbc:           { variant: 'tbc',     label: 'TBC'              },
+  activating:    { variant: 'warn',    label: '⚠ Activating'     },
 }
 
 const dotColor: Record<string, string> = {
-  completed:     '#00D4AA',
-  in_progress:   '#4DA2FF',
-  rescheduling:  '#FFB547',
-  pencil_booked: '#00D4AA',
-  tbc:           '#A78BFA',
-  activating:    '#FFB547',
+  completed:     '#14b8a6',
+  in_progress:   '#06b6d4',
+  rescheduling:  '#f59e0b',
+  pencil_booked: '#14b8a6',
+  tbc:           '#a78bfa',
+  activating:    '#f59e0b',
 }
 
 const chapterDateColor: Record<string, string> = {
-  completed:     '#00D4AA',
-  in_progress:   '#4DA2FF',
-  rescheduling:  '#FFB547',
-  pencil_booked: '#00D4AA',
-  tbc:           '#A78BFA',
+  completed:     '#14b8a6',
+  in_progress:   '#06b6d4',
+  rescheduling:  '#f59e0b',
+  pencil_booked: '#14b8a6',
+  tbc:           '#a78bfa',
 }
 
-const campBorderColor: Record<string, string> = {
-  blue:   'border-l-[#4DA2FF]',
-  teal:   'border-l-[#00D4AA]',
-  yellow: 'border-l-[#FFB547]',
-  purple: 'border-l-[#A78BFA]',
-}
-
-interface Props {
-  chapters: Chapter[]
-  kpis: Kpi[]
-  onShowChapter: (id: string) => void
-}
+interface Props { chapters: Chapter[]; kpis: Kpi[]; onShowChapter: (id: string) => void }
 
 export default function DsuPanel({ chapters, kpis, onShowChapter }: Props) {
-  const campChapters = chapters.filter(c => c.number !== '6')
+  const campChapters    = chapters.filter(c => c.number !== '6')
   const upcomingChapters = chapters.filter(c => c.id !== 'manila')
   const chaptersWithTodos = chapters.filter(c => c.todos.length > 0)
 
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+
       {/* DSU Header */}
-      <div className="bg-[#0D1420] border border-[rgba(77,162,255,0.25)] rounded-[12px] overflow-hidden mb-5">
-        <div className="h-0.5 bg-gradient-to-r from-[#4DA2FF] via-[#00D4AA] to-[#4DA2FF]" />
-        <div className="flex items-start justify-between flex-wrap gap-3 p-[16px_20px]">
+      <div className="bg-[#0f172a] border border-[#1e293b] rounded-2xl overflow-hidden">
+        <div className="h-0.5 bg-gradient-to-r from-[#06b6d4] via-[#14b8a6] to-[#06b6d4]" />
+        <div className="flex items-start justify-between flex-wrap gap-3 p-5">
           <div>
-            <div className="font-mono text-[9px] text-[#4DA2FF] tracking-[0.15em] uppercase mb-1">📝 DEVCON Ops — Monday Morning DSU</div>
-            <div className="text-[20px] font-extrabold text-white">Monday, April 13, 2026</div>
-            <div className="font-mono text-[10px] text-[#7A8BA8] mt-0.5">Sui Build Beyond DEVCON PH · Q2 · 78 days remaining</div>
+            <div className="text-[9px] text-[#06b6d4] tracking-[0.15em] uppercase mb-1.5 font-bold">📝 DEVCON Ops — Monday Morning DSU</div>
+            <div className="text-[20px] font-extrabold text-[#f8fafc]">Monday, April 13, 2026</div>
+            <div className="text-[11px] text-[#64748b] mt-0.5">Sui Build Beyond DEVCON PH · Q2 · 78 days remaining</div>
           </div>
-          <div className="font-mono text-[10px] text-[#00D4AA] bg-[rgba(0,212,170,0.1)] border border-[rgba(0,212,170,0.3)] px-3 py-1.5 rounded-md inline-flex items-center gap-1.5 self-start">
+          <div className="text-[10px] text-[#14b8a6] bg-[rgba(20,184,166,0.1)] border border-[rgba(20,184,166,0.25)] px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5 self-start">
             <span className="animate-[pulse_2s_infinite]">●</span> Live Tracker
           </div>
         </div>
       </div>
 
       {/* KPI Grid */}
-      <SectionTitle>📊 KPI Summary</SectionTitle>
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(130px,1fr))] gap-[10px] mb-5">
-        {kpis.map(k => (
-          <KpiTile key={k.id} value={k.value} label={k.label} sublabel={k.sublabel} color={k.color} />
-        ))}
-      </div>
-
-      {/* Camp Progress Cards */}
-      <SectionTitle>🏕 Program Progress</SectionTitle>
-      <div className="grid grid-cols-2 gap-[14px] mb-5 max-[640px]:grid-cols-1">
-        {/* Code Camps */}
-        <div className="bg-[#0D1420] border border-[rgba(77,162,255,0.3)] rounded-[10px] p-4 relative overflow-hidden">
-          <div className="absolute top-0 left-0 bottom-0 w-[3px] rounded-l-[3px] bg-[#4DA2FF]" />
-          <div className="text-[10px] font-bold uppercase tracking-[0.1em] font-mono text-[#4DA2FF] mb-2">🏕 Sui Code Camps</div>
-          <div className="flex items-baseline gap-[5px] mb-2">
-            <span className="text-[38px] font-extrabold font-mono text-[#4DA2FF] leading-none">1</span>
-            <span className="text-[18px] font-extrabold font-mono text-[#7A8BA8]">/ 5</span>
-            <span className="text-[11px] text-[#7A8BA8] ml-1">done</span>
-          </div>
-          <ProgressBar percent={20} />
-          <div className="flex flex-col gap-1 mt-2">
-            {campChapters.map(c => (
-              <div key={c.id} className="flex items-center gap-[7px] text-[11px]">
-                <span className="w-[7px] h-[7px] rounded-full flex-shrink-0" style={{ background: dotColor[c.status] }} />
-                <span className="text-[#7A8BA8]">
-                  {c.name.replace('– NCR','– Letran').replace('– WV','– CPU Jaro').replace('– EV','– LNU')}{' '}
-                  <em className="font-mono text-[10px]" style={{ color: dotColor[c.status] }}>
-                    {c.status === 'completed' ? '✓ Done' : c.date_text === 'TBD' ? 'TBD' : c.date_text.split(',')[0]}
-                  </em>
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Dev Events */}
-        <div className="bg-[#0D1420] border border-[rgba(255,181,71,0.3)] rounded-[10px] p-4 relative overflow-hidden">
-          <div className="absolute top-0 left-0 bottom-0 w-[3px] rounded-l-[3px] bg-[#FFB547]" />
-          <div className="text-[10px] font-bold uppercase tracking-[0.1em] font-mono text-[#FFB547] mb-2">⚡ Sui Developer Events</div>
-          <div className="flex items-baseline gap-[5px] mb-2">
-            <span className="text-[38px] font-extrabold font-mono text-[#FFB547] leading-none">2</span>
-            <span className="text-[18px] font-extrabold font-mono text-[#7A8BA8]">/ 5</span>
-            <span className="text-[11px] text-[#7A8BA8] ml-1">done</span>
-          </div>
-          <ProgressBar percent={40} color="yellow" />
-          <div className="flex flex-col gap-1 mt-2 text-[11px] text-[#7A8BA8]">
-            <div className="flex items-center gap-2"><span className="w-[7px] h-[7px] rounded-full bg-[#00D4AA] flex-shrink-0" />Bayleaf Intramuros National Kickoff <em className="font-mono text-[10px] text-[#00D4AA]">✓ Done</em></div>
-            <div className="flex items-center gap-2"><span className="w-[7px] h-[7px] rounded-full bg-[#00D4AA] flex-shrink-0" />SHEisDEVCON Manila <em className="font-mono text-[10px] text-[#00D4AA]">✓ Done</em></div>
-            <div className="flex items-center gap-2"><span className="w-[7px] h-[7px] rounded-full bg-[#FFB547] flex-shrink-0" />SHEisDEVCON Iloilo <em className="font-mono text-[10px] text-[#FFB547]">Apr 18</em></div>
-            <div className="flex items-center gap-2"><span className="w-[7px] h-[7px] rounded-full bg-[#4DA2FF] flex-shrink-0" />SHEisDEVCON Event 4 <em className="font-mono text-[10px] text-[#4DA2FF]">May</em></div>
-            <div className="flex items-center gap-2"><span className="w-[7px] h-[7px] rounded-full bg-[#00D4AA] flex-shrink-0" />SHEisDEVCON Event 5 <em className="font-mono text-[10px] text-[#00D4AA]">Jun</em></div>
-          </div>
+      <div>
+        <SectionTitle>📊 KPI Summary</SectionTitle>
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(130px,1fr))] gap-3">
+          {kpis.map(k => (
+            <KpiTile key={k.id} value={k.value} label={k.label} sublabel={k.sublabel} color={k.color} />
+          ))}
         </div>
       </div>
 
-      {/* Camp Schedule Cards */}
-      <SectionTitle>📅 Camp Schedule & Countdown</SectionTitle>
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-[12px] mb-5">
-        {upcomingChapters.map(chapter => {
-          const b = statusBadge[chapter.status]
-          const bc = campBorderColor[chapter.color]
-          return (
-            <div key={chapter.id} className={`bg-[#0D1420] border border-[rgba(77,162,255,0.15)] border-l-[3px] ${bc} rounded-[10px] p-4`}>
-              <div className="flex justify-between items-start gap-2 mb-2">
-                <div>
-                  <div className="text-[13px] font-extrabold text-white">{chapter.city}</div>
-                  <div className="font-mono text-[10px] text-[#7A8BA8] mt-0.5">{chapter.venue.split(',')[0]} · Lead: {chapter.lead_name.split('&')[0].trim()}</div>
-                </div>
-                <Badge variant={b.variant}>{b.label}</Badge>
-              </div>
-              <div className="font-mono text-[11px] mb-1" style={{ color: chapterDateColor[chapter.status] }}>
-                {chapter.date_text}
-              </div>
-              <ProgressBar percent={chapter.progress_percent} color={chapter.color === 'yellow' ? 'yellow' : chapter.color === 'teal' ? 'teal' : chapter.color === 'purple' ? 'purple' : 'default'} />
-              <div className="font-mono text-[10px] text-[#7A8BA8] mt-1 mb-2">{chapter.countdown_text}</div>
-              <div className="border-t border-[rgba(77,162,255,0.1)] pt-2 flex flex-col gap-1">
-                {chapter.todos.slice(0, 3).map(t => (
-                  <div key={t.id} className="flex items-start gap-2 text-[11px]">
-                    <span className={`flex-shrink-0 mt-0.5 font-bold ${t.status === 'urgent' ? 'text-[#FF4D6A]' : 'text-[#FFB547]'}`}>→</span>
-                    <span className="text-[#7A8BA8]"><strong className="text-[#E8F0FF]">{t.owner}:</strong> {t.description}</span>
-                  </div>
-                ))}
-              </div>
+      {/* Program Progress */}
+      <div>
+        <SectionTitle>🏕 Program Progress</SectionTitle>
+        <div className="grid grid-cols-2 gap-4 max-[640px]:grid-cols-1">
+
+          {/* Code Camps */}
+          <div className="bg-[#0f172a] border border-[rgba(6,182,212,0.25)] rounded-2xl p-5 relative overflow-hidden">
+            <div className="absolute top-0 left-0 bottom-0 w-[3px] rounded-l-2xl bg-[#06b6d4]" />
+            <div className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#06b6d4] mb-3">🏕 Sui Code Camps</div>
+            <div className="flex items-baseline gap-1.5 mb-3">
+              <span className="text-[38px] font-extrabold text-[#06b6d4] leading-none">1</span>
+              <span className="text-[18px] font-extrabold text-[#64748b]">/ 5</span>
+              <span className="text-[11px] text-[#64748b] ml-1">done</span>
             </div>
-          )
-        })}
+            <ProgressBar percent={20} />
+            <div className="flex flex-col gap-1.5 mt-3">
+              {campChapters.map(c => (
+                <div key={c.id} className="flex items-center gap-2 text-[11px]">
+                  <span className="w-[7px] h-[7px] rounded-full flex-shrink-0" style={{ background: dotColor[c.status] }} />
+                  <span className="text-[#94a3b8]">
+                    {c.name.replace('– NCR','– Letran').replace('– WV','– CPU Jaro').replace('– EV','– LNU')}{' '}
+                    <em style={{ color: dotColor[c.status] }}>
+                      {c.status === 'completed' ? '✓ Done' : c.date_text === 'TBD' ? 'TBD' : c.date_text.split(',')[0]}
+                    </em>
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Dev Events */}
+          <div className="bg-[#0f172a] border border-[rgba(245,158,11,0.25)] rounded-2xl p-5 relative overflow-hidden">
+            <div className="absolute top-0 left-0 bottom-0 w-[3px] rounded-l-2xl bg-[#f59e0b]" />
+            <div className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#f59e0b] mb-3">⚡ Sui Developer Events</div>
+            <div className="flex items-baseline gap-1.5 mb-3">
+              <span className="text-[38px] font-extrabold text-[#f59e0b] leading-none">2</span>
+              <span className="text-[18px] font-extrabold text-[#64748b]">/ 5</span>
+              <span className="text-[11px] text-[#64748b] ml-1">done</span>
+            </div>
+            <ProgressBar percent={40} color="yellow" />
+            <div className="flex flex-col gap-1.5 mt-3 text-[11px] text-[#94a3b8]">
+              <div className="flex items-center gap-2"><span className="w-[7px] h-[7px] rounded-full bg-[#14b8a6] flex-shrink-0" />Bayleaf Intramuros National Kickoff <em className="text-[#14b8a6]">✓ Done</em></div>
+              <div className="flex items-center gap-2"><span className="w-[7px] h-[7px] rounded-full bg-[#14b8a6] flex-shrink-0" />SHEisDEVCON Manila <em className="text-[#14b8a6]">✓ Done</em></div>
+              <div className="flex items-center gap-2"><span className="w-[7px] h-[7px] rounded-full bg-[#f59e0b] flex-shrink-0" />SHEisDEVCON Iloilo <em className="text-[#f59e0b]">Apr 18</em></div>
+              <div className="flex items-center gap-2"><span className="w-[7px] h-[7px] rounded-full bg-[#06b6d4] flex-shrink-0" />SHEisDEVCON Event 4 <em className="text-[#06b6d4]">May</em></div>
+              <div className="flex items-center gap-2"><span className="w-[7px] h-[7px] rounded-full bg-[#14b8a6] flex-shrink-0" />SHEisDEVCON Event 5 <em className="text-[#14b8a6]">Jun</em></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Camp Schedule */}
+      <div>
+        <SectionTitle>📅 Camp Schedule & Countdown</SectionTitle>
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4">
+          {upcomingChapters.map(chapter => {
+            const b = statusBadge[chapter.status]
+            const accentColor = chapter.color === 'teal' ? '#14b8a6' : chapter.color === 'yellow' ? '#f59e0b' : chapter.color === 'purple' ? '#a78bfa' : '#06b6d4'
+            return (
+              <div key={chapter.id} className="bg-[#0f172a] border border-[#1e293b] rounded-2xl p-5" style={{ borderLeft: `3px solid ${accentColor}` }}>
+                <div className="flex justify-between items-start gap-2 mb-2">
+                  <div>
+                    <div className="text-[13px] font-extrabold text-[#f8fafc]">{chapter.city}</div>
+                    <div className="text-[10px] text-[#64748b] mt-0.5">{chapter.venue.split(',')[0]} · Lead: {chapter.lead_name.split('&')[0].trim()}</div>
+                  </div>
+                  <Badge variant={b.variant}>{b.label}</Badge>
+                </div>
+                <div className="text-[11px] font-semibold mb-1.5" style={{ color: chapterDateColor[chapter.status] }}>{chapter.date_text}</div>
+                <ProgressBar percent={chapter.progress_percent} color={chapter.color === 'yellow' ? 'yellow' : chapter.color === 'teal' ? 'teal' : chapter.color === 'purple' ? 'purple' : 'default'} />
+                <div className="text-[10px] text-[#64748b] mt-1.5 mb-3">{chapter.countdown_text}</div>
+                <div className="border-t border-[#1e293b] pt-3 flex flex-col gap-1.5">
+                  {chapter.todos.slice(0, 3).map(t => (
+                    <div key={t.id} className="flex items-start gap-2 text-[11px]">
+                      <span className={`flex-shrink-0 mt-0.5 font-bold ${t.status === 'urgent' ? 'text-[#e11d48]' : 'text-[#f59e0b]'}`}>→</span>
+                      <span className="text-[#94a3b8]"><strong className="text-[#f8fafc]">{t.owner}:</strong> {t.description}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          })}
+        </div>
       </div>
 
       {/* High Risks */}
-      <SectionTitle>⚠️ High Risks & Blockers</SectionTitle>
-      <div className="flex flex-col gap-2 mb-5">
-        <div className="flex gap-3 items-start p-[13px_14px] rounded-lg bg-[rgba(255,77,106,0.07)] border border-[rgba(255,77,106,0.25)]">
-          <span className="text-[16px] leading-[1.4] flex-shrink-0">🔴</span>
-          <div>
-            <div className="text-[13px] font-bold text-[#FF4D6A] mb-0.5">Tacloban Rescheduling</div>
-            <div className="text-[12px] text-[#7A8BA8] leading-[1.6]">Date still TBC. Rolf to confirm by end of week. Must lock before May 1 to stay within Q2 window.</div>
-            <div className="mt-1.5 font-mono text-[10px] text-[#FF4D6A]">OWNER: Rolf · DEADLINE: End of this week</div>
-          </div>
-        </div>
-        <div className="flex gap-3 items-start p-[13px_14px] rounded-lg bg-[rgba(167,139,250,0.07)] border border-[rgba(167,139,250,0.25)]">
-          <span className="text-[16px] leading-[1.4] flex-shrink-0">🟣</span>
-          <div>
-            <div className="text-[13px] font-bold text-[#A78BFA] mb-0.5">Laguna — No Confirmed Slot</div>
-            <div className="text-[12px] text-[#7A8BA8] leading-[1.6]">Lead assigned: John Danmel. Awaiting June go/no-go from Dom. Risk of cancellation.</div>
-            <div className="mt-1.5 font-mono text-[10px] text-[#A78BFA]">OWNER: Dom / John Danmel · ACTION: Confirm slot or cancel</div>
-          </div>
-        </div>
-        <div className="flex gap-3 items-start p-[13px_14px] rounded-lg bg-[rgba(255,181,71,0.07)] border border-[rgba(255,181,71,0.25)]">
-          <span className="text-[16px] leading-[1.4] flex-shrink-0">🟡</span>
-          <div>
-            <div className="text-[13px] font-bold text-[#FFB547] mb-0.5">Ocular Readiness — Bukidnon & Iloilo</div>
-            <div className="text-[12px] text-[#7A8BA8] leading-[1.6]">Both chapters in T-30 window. Ocular reports due immediately. Delay in ocular = delay in installation.</div>
-            <div className="mt-1.5 font-mono text-[10px] text-[#FFB547]">OWNER: Zhi (BSU) · Ted / Marica (CPU + WVSU) · Schedule this week</div>
-          </div>
+      <div>
+        <SectionTitle>⚠️ High Risks & Blockers</SectionTitle>
+        <div className="flex flex-col gap-3">
+          {[
+            { icon: '🔴', title: 'Tacloban Rescheduling', color: '#e11d48', border: 'rgba(225,29,72,0.25)', bg: 'rgba(225,29,72,0.06)', body: 'Date still TBC. Rolf to confirm by end of week. Must lock before May 1 to stay within Q2 window.', owner: 'OWNER: Rolf · DEADLINE: End of this week' },
+            { icon: '🟣', title: 'Laguna — No Confirmed Slot', color: '#a78bfa', border: 'rgba(167,139,250,0.25)', bg: 'rgba(167,139,250,0.06)', body: 'Lead assigned: John Danmel. Awaiting June go/no-go from Dom. Risk of cancellation.', owner: 'OWNER: Dom / John Danmel · ACTION: Confirm slot or cancel' },
+            { icon: '🟡', title: 'Ocular Readiness — Bukidnon & Iloilo', color: '#f59e0b', border: 'rgba(245,158,11,0.25)', bg: 'rgba(245,158,11,0.06)', body: 'Both chapters in T-30 window. Ocular reports due immediately. Delay in ocular = delay in installation.', owner: 'OWNER: Zhi (BSU) · Ted / Marica (CPU + WVSU) · Schedule this week' },
+          ].map(r => (
+            <div key={r.title} className="flex gap-4 items-start p-4 rounded-2xl" style={{ background: r.bg, border: `1px solid ${r.border}` }}>
+              <span className="text-[18px] leading-snug flex-shrink-0 mt-0.5">{r.icon}</span>
+              <div>
+                <div className="text-[13px] font-bold mb-1" style={{ color: r.color }}>{r.title}</div>
+                <div className="text-[12px] text-[#94a3b8] leading-relaxed">{r.body}</div>
+                <div className="mt-2 text-[10px] font-bold uppercase tracking-[0.08em]" style={{ color: r.color }}>{r.owner}</div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* To-Do List Per Camp */}
-      <SectionTitle>✅ To-Do List Per Camp</SectionTitle>
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-[12px] mb-5">
-        {chaptersWithTodos.map(chapter => {
-          const labelColor = chapter.color === 'blue' ? '#4DA2FF' : chapter.color === 'teal' ? '#00D4AA' : chapter.color === 'yellow' ? '#FFB547' : '#A78BFA'
-          return (
-            <Card key={chapter.id}>
-              <div className="text-[10px] font-bold font-mono uppercase tracking-[0.1em] mb-2.5" style={{ color: labelColor }}>
-                📍 {chapter.name}
-              </div>
-              {chapter.todos.map(t => (
-                <div key={t.id} className="flex items-start gap-2 text-[12px] py-0.5">
-                  <span className={`flex-shrink-0 mt-0.5 font-bold ${t.status === 'urgent' ? 'text-[#FF4D6A]' : 'text-[#FFB547]'}`} style={{ color: labelColor }}>→</span>
-                  <span className="text-[#7A8BA8]"><strong className="text-[#E8F0FF]">{t.owner}:</strong> {t.description}</span>
-                </div>
-              ))}
-            </Card>
-          )
-        })}
-        <Card>
-          <div className="text-[10px] font-bold font-mono uppercase tracking-[0.1em] mb-2.5 text-[#7A8BA8]">📍 General / Backlog</div>
-          <div className="flex items-start gap-2 text-[12px]">
-            <span className="text-[#4DA2FF] font-bold flex-shrink-0">→</span>
-            <span className="text-[#7A8BA8]"><strong className="text-[#E8F0FF]">Dom:</strong> Draft Q2 narrative report outline for Sui Foundation</span>
-          </div>
-        </Card>
+      {/* To-Do Per Camp */}
+      <div>
+        <SectionTitle>✅ To-Do List Per Camp</SectionTitle>
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4">
+          {chaptersWithTodos.map(chapter => {
+            const accentColor = chapter.color === 'teal' ? '#14b8a6' : chapter.color === 'yellow' ? '#f59e0b' : chapter.color === 'purple' ? '#a78bfa' : '#06b6d4'
+            return (
+              <Card key={chapter.id}>
+                <div className="text-[10px] font-bold uppercase tracking-[0.1em] mb-3" style={{ color: accentColor }}>📍 {chapter.name}</div>
+                {chapter.todos.map(t => (
+                  <div key={t.id} className="flex items-start gap-2 text-[12px] py-0.5">
+                    <span className="flex-shrink-0 mt-0.5 font-bold" style={{ color: accentColor }}>→</span>
+                    <span className="text-[#94a3b8]"><strong className="text-[#f8fafc]">{t.owner}:</strong> {t.description}</span>
+                  </div>
+                ))}
+              </Card>
+            )
+          })}
+          <Card>
+            <div className="text-[10px] font-bold uppercase tracking-[0.1em] mb-3 text-[#64748b]">📍 General / Backlog</div>
+            <div className="flex items-start gap-2 text-[12px]">
+              <span className="text-[#06b6d4] font-bold flex-shrink-0">→</span>
+              <span className="text-[#94a3b8]"><strong className="text-[#f8fafc]">Dom:</strong> Draft Q2 narrative report outline for Sui Foundation</span>
+            </div>
+          </Card>
+        </div>
       </div>
 
       {/* Quick Chapter Nav */}
-      <div className="p-[14px_16px] bg-[#0D1420] border border-[rgba(77,162,255,0.15)] rounded-lg">
-        <div className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#7A8BA8] font-mono mb-2.5">Jump to Chapter</div>
+      <div className="p-5 bg-[#0f172a] border border-[#1e293b] rounded-2xl">
+        <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#64748b] mb-3">Jump to Chapter</div>
         <div className="flex gap-2 flex-wrap">
           {chapters.map(c => {
-            const color = c.color === 'teal' ? { cls: 'bg-[rgba(0,212,170,0.1)] border-[rgba(0,212,170,0.3)] text-[#00D4AA]' }
-              : c.color === 'yellow' ? { cls: 'bg-[rgba(255,181,71,0.1)] border-[rgba(255,181,71,0.3)] text-[#FFB547]' }
-              : c.color === 'purple' ? { cls: 'bg-[rgba(167,139,250,0.1)] border-[rgba(167,139,250,0.3)] text-[#A78BFA]' }
-              : { cls: 'bg-[rgba(77,162,255,0.1)] border-[rgba(77,162,255,0.3)] text-[#4DA2FF]' }
+            const accentColor = c.color === 'teal' ? '#14b8a6' : c.color === 'yellow' ? '#f59e0b' : c.color === 'purple' ? '#a78bfa' : '#06b6d4'
             const icon = c.status === 'completed' ? ' ✓' : c.status === 'rescheduling' ? ' ⚠' : c.status === 'in_progress' ? ' 🔄' : c.status === 'tbc' ? ' TBC' : ''
             return (
               <button key={c.id} onClick={() => onShowChapter(c.id)}
-                className={`px-[13px] py-[7px] rounded-md text-[11px] font-bold border transition-all hover:opacity-80 hover:-translate-y-[1px] font-sans ${color.cls}`}>
+                className="px-3.5 py-2 rounded-xl text-[11px] font-bold border transition-all hover:opacity-80 hover:-translate-y-px"
+                style={{ background: `${accentColor}18`, border: `1px solid ${accentColor}44`, color: accentColor }}
+              >
                 Ch{c.number} {c.city}{icon}
               </button>
             )

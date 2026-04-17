@@ -1,5 +1,4 @@
-import Card from '@/components/ui/Card'
-import SectionTitle from '@/components/ui/SectionTitle'
+import PanelHeader from '@/components/ui/PanelHeader'
 
 const steps = [
   'Account Preparation Basics',
@@ -14,84 +13,96 @@ const steps = [
   'Hackathon Announcements + Optional Advanced Exercises',
 ]
 
+const CARD: React.CSSProperties = {
+  display: 'grid', gridTemplateColumns: '32px 1fr', gap: '14px',
+  alignItems: 'center', padding: '14px 18px',
+  background: '#0f172a', border: '1px solid #1e293b', borderRadius: '14px',
+  transition: 'border-color .2s',
+}
+
 export default function ContentPanel() {
-  const half = Math.ceil(steps.length / 2)
   return (
-    <div className="animate-fade-in">
-      <div className="bg-[rgba(255,181,71,0.06)] border border-[rgba(255,181,71,0.25)] rounded-lg p-[11px_14px] text-[12px] text-[#7A8BA8] leading-[1.7] mb-4">
-        <strong className="text-[#FFB547]">⚠ Content Update in Progress:</strong> Mike and Lady are updating the code camp content, installation guide, and installation procedures based on Letran pilot learnings. All chapters must use the updated version — do <strong className="text-[#FF4D6A]">NOT</strong> use pre-Manila materials.
+    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+      <PanelHeader
+        eyebrow="Content"
+        title="Content Hub"
+        subtitle="10-step code camp curriculum · report templates · troubleshooting"
+      />
+
+      {/* Alert */}
+      <div style={{ display: 'flex', gap: '10px', padding: '12px 16px', background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: '12px', fontSize: '12px', color: '#94a3b8' }}>
+        <span style={{ color: '#f59e0b', flexShrink: 0 }}>⚠</span>
+        <span>
+          <strong style={{ color: '#f59e0b' }}>Content update in progress.</strong> Mike and Lady are revising all materials based on Letran pilot learnings.
+          Do <strong style={{ color: '#e11d48' }}>NOT</strong> use pre-Manila materials.
+          {' '}<span style={{ color: '#475569' }}>Deliverable: Vercel app + Sui mainnet object (Level 1 folio). Proof: Exercise Completion Form.</span>
+        </span>
       </div>
 
-      <SectionTitle>10-Step Code Camp Program (All Chapters)</SectionTitle>
-      <div className="bg-[rgba(77,162,255,0.06)] border border-[rgba(77,162,255,0.2)] rounded-lg p-[11px_14px] text-[12px] text-[#7A8BA8] leading-[1.7] mb-4">
-        <strong className="text-[#4DA2FF]">Student Deliverable:</strong> Vercel app + Sui mainnet object deployed (Level 1 folio) &nbsp;·&nbsp;{' '}
-        <strong className="text-[#4DA2FF]">Completion Proof:</strong> Exercise Completion Form → Sui Foundation Q2 reporting
-      </div>
-
-      <div className="grid grid-cols-2 gap-[14px] mb-5 max-[640px]:grid-cols-1">
-        <Card>
-          <div className="flex flex-col gap-[9px]">
-            {steps.slice(0, half).map((step, i) => (
-              <div key={i} className="flex items-center gap-[11px] py-1.5 border-b border-[rgba(77,162,255,0.06)] last:border-b-0">
-                <div className="w-6 h-6 rounded-full bg-[rgba(77,162,255,0.12)] border border-[rgba(77,162,255,0.3)] flex items-center justify-center font-mono text-[10px] font-bold text-[#4DA2FF] flex-shrink-0">
-                  {i + 1}
-                </div>
-                <div className="text-[12px] font-bold text-[#E8F0FF]">{step}</div>
+      {/* 10-step program */}
+      <div>
+        <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#64748b', marginBottom: '14px' }}>10-Step Code Camp Program</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {steps.map((step, i) => (
+            <div key={i} style={CARD}
+              onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(6,182,212,0.35)')}
+              onMouseLeave={e => (e.currentTarget.style.borderColor = '#1e293b')}>
+              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(6,182,212,0.1)', border: '1px solid rgba(6,182,212,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 800, color: '#06b6d4', flexShrink: 0 }}>
+                {i + 1}
               </div>
-            ))}
-          </div>
-        </Card>
-        <Card>
-          <div className="flex flex-col gap-[9px]">
-            {steps.slice(half).map((step, i) => (
-              <div key={i} className="flex items-center gap-[11px] py-1.5 border-b border-[rgba(77,162,255,0.06)] last:border-b-0">
-                <div className="w-6 h-6 rounded-full bg-[rgba(77,162,255,0.12)] border border-[rgba(77,162,255,0.3)] flex items-center justify-center font-mono text-[10px] font-bold text-[#4DA2FF] flex-shrink-0">
-                  {half + i + 1}
-                </div>
-                <div className="text-[12px] font-bold text-[#E8F0FF]">{step}</div>
-              </div>
-            ))}
-          </div>
-        </Card>
+              <span style={{ fontSize: '13px', fontWeight: 600, color: '#f8fafc' }}>{step}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
-      <SectionTitle>Troubleshooting — 403 Forbidden Error on Sui Install</SectionTitle>
-      <Card className="mb-5">
-        <pre className="font-mono text-[11px] text-[#00D4AA] leading-[2] overflow-x-auto whitespace-pre-wrap break-all">{`wget https://github.com/MystenLabs/sui/releases/download/testnet-v1.44.2/sui-testnet-v1.44.2-ubuntu-x86_64.tgz
+      {/* Troubleshooting */}
+      <div>
+        <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#64748b', marginBottom: '14px' }}>Troubleshooting — 403 Forbidden on Sui Install</p>
+        <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '14px', padding: '20px' }}>
+          <pre style={{ fontSize: '11px', color: '#14b8a6', lineHeight: 1.7, overflowX: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-all', margin: 0 }}>{`wget https://github.com/MystenLabs/sui/releases/download/testnet-v1.44.2/sui-testnet-v1.44.2-ubuntu-x86_64.tgz
 tar -xvf sui-testnet-v1.44.2-ubuntu-x86_64.tgz
 chmod +x sui
 sudo mv sui /usr/local/bin/
 sui --version`}</pre>
-        <div className="mt-2.5 p-[9px_12px] bg-[rgba(0,212,170,0.06)] border border-[rgba(0,212,170,0.2)] rounded-md text-[11px] text-[#7A8BA8]">
-          💡 <strong className="text-[#00D4AA]">Offline Install:</strong> Use USB thumb drives with zipped Sui binaries for restricted WiFi labs.
+          <div style={{ marginTop: '14px', display: 'flex', gap: '8px', padding: '10px 14px', background: 'rgba(20,184,166,0.06)', border: '1px solid rgba(20,184,166,0.18)', borderRadius: '10px', fontSize: '11px', color: '#94a3b8' }}>
+            <span style={{ color: '#14b8a6', flexShrink: 0 }}>💡</span>
+            <span><strong style={{ color: '#14b8a6' }}>Offline install:</strong> Use USB thumb drives with zipped Sui binaries for restricted WiFi labs.</span>
+          </div>
         </div>
-      </Card>
+      </div>
 
-      <div className="grid grid-cols-2 gap-[14px] max-[640px]:grid-cols-1">
-        <Card>
-          <div className="text-[12px] font-bold mb-2.5 text-[#E8F0FF]">Post-Event SITREP Template</div>
-          <pre className="text-[10px] text-[#7A8BA8] font-mono leading-[2] whitespace-pre-wrap">{`EVENT SITREP — [Chapter Name]
-Date: [event date]
-Lead: [name]
-Actual pax: [number] (target: [number])
-Session: [Part 1 only / Part 1 + Dinner]
-Key outcomes: [projects, DeepSurge, moments]
+      {/* Templates */}
+      <div>
+        <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#64748b', marginBottom: '14px' }}>Report Templates</p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          {/* Post-event SITREP */}
+          <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '14px', padding: '18px' }}>
+            <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: '#06b6d4', marginBottom: '12px' }}>Post-Event SITREP</p>
+            <pre style={{ fontSize: '10px', color: '#64748b', lineHeight: 1.8, whiteSpace: 'pre-wrap', margin: 0 }}>{`EVENT SITREP — [Chapter Name]
+Date:         [event date]
+Lead:         [name]
+Actual pax:   [number] (target: [number])
+Session:      [Part 1 only / Part 1 + Dinner]
+Key outcomes: [projects, moments]
 BIR invoices: [collected / pending]
-Liquidation: [submitted / pending by date]
-Issues: [list or NONE]`}</pre>
-        </Card>
-        <Card>
-          <div className="text-[12px] font-bold mb-2.5 text-[#E8F0FF]">Ocular Report Template</div>
-          <pre className="text-[10px] text-[#7A8BA8] font-mono leading-[2] whitespace-pre-wrap">{`OCULAR REPORT — [Chapter Name]
-Date: [date] · Lead: [name]
-Venue: [venue name]
-Labs: [number] labs, [number] machines each
-Network: [stable / restricted / TBC]
-IT admin contact: [name]
-School org contact: [name]
-Roadblocks found: [list or NONE]
-Installation start date: [date]`}</pre>
-        </Card>
+Liquidation:  [submitted / pending by date]
+Issues:       [list or NONE]`}</pre>
+          </div>
+          {/* Ocular report */}
+          <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '14px', padding: '18px' }}>
+            <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: '#14b8a6', marginBottom: '12px' }}>Ocular Report</p>
+            <pre style={{ fontSize: '10px', color: '#64748b', lineHeight: 1.8, whiteSpace: 'pre-wrap', margin: 0 }}>{`OCULAR REPORT — [Chapter Name]
+Date:         [date] · Lead: [name]
+Venue:        [venue name]
+Labs:         [n] labs, [n] machines each
+Network:      [stable / restricted / TBC]
+IT admin:     [name]
+School org:   [name]
+Roadblocks:   [list or NONE]
+Install date: [date]`}</pre>
+          </div>
+        </div>
       </div>
     </div>
   )
