@@ -1,6 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { fetchChapters, fetchKpis, fetchRisks, fetchContacts, fetchMerchItems, fetchLinks } from '@/lib/supabase/queries'
+import type { Chapter, Kpi, Risk, Contact, MerchItem, ResourceLink } from '@/lib/types'
 import DsuPanel from '@/components/panels/DsuPanel'
 import KpiPanel from '@/components/panels/KpiPanel'
 import ChaptersPanel from '@/components/panels/ChaptersPanel'
@@ -13,7 +15,6 @@ import ContactsPanel from '@/components/panels/ContactsPanel'
 import ContentPanel from '@/components/panels/ContentPanel'
 
 type TabId = 'dsu' | 'kpi' | 'milestones' | 'chapters' | 'risks' | 'merch' | 'links' | 'contacts' | 'content'
-type ChapterId = 'manila' | 'tacloban' | 'iloilo' | 'bukidnon' | 'pampanga' | 'laguna'
 
 const MAIN_TABS: { id: TabId; label: string }[] = [
   { id: 'dsu',        label: '📝 DSU Apr 13' },
@@ -27,21 +28,43 @@ const MAIN_TABS: { id: TabId; label: string }[] = [
   { id: 'content',    label: '💻 Content' },
 ]
 
-const CHAPTER_TABS: { id: ChapterId; label: string }[] = [
-  { id: 'manila',    label: 'Ch1 Manila' },
-  { id: 'tacloban',  label: 'Ch2 Tacloban' },
-  { id: 'iloilo',    label: 'Ch3 Iloilo' },
-  { id: 'bukidnon',  label: 'Ch4 Bukidnon' },
-  { id: 'pampanga',  label: 'Ch5 Pampanga' },
-  { id: 'laguna',    label: 'Ch6 Laguna' },
-]
+const colorPillCls: Record<string, { cls: string; numCls: string }> = {
+  blue:  { cls: 'border-[rgba(77,162,255,0.25)]',  numCls: 'text-[#4DA2FF]' },
+  teal:  { cls: 'border-[rgba(0,212,170,0.25)]',   numCls: 'text-[#00D4AA]' },
+  green: { cls: 'border-[rgba(0,212,170,0.4)]',    numCls: 'text-[#00D4AA]' },
+}
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabId>('dsu')
-  const [activeChapter, setActiveChapter] = useState<ChapterId | null>(null)
+  const [activeChapter, setActiveChapter] = useState<string | null>(null)
+
+  const [chapters, setChapters]     = useState<Chapter[]>([])
+  const [kpis, setKpis]             = useState<Kpi[]>([])
+  const [risks, setRisks]           = useState<Risk[]>([])
+  const [contacts, setContacts]     = useState<Contact[]>([])
+  const [merchItems, setMerchItems] = useState<MerchItem[]>([])
+  const [links, setLinks]           = useState<ResourceLink[]>([])
+
+  useEffect(() => {
+    Promise.all([
+      fetchChapters(),
+      fetchKpis(),
+      fetchRisks(),
+      fetchContacts(),
+      fetchMerchItems(),
+      fetchLinks(),
+    ]).then(([c, k, r, co, m, l]) => {
+      setChapters(c)
+      setKpis(k)
+      setRisks(r)
+      setContacts(co)
+      setMerchItems(m)
+      setLinks(l)
+    })
+  }, [])
 
   function showChapter(id: string) {
-    setActiveChapter(id as ChapterId)
+    setActiveChapter(id)
     setActiveTab('chapters')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -55,6 +78,20 @@ export default function Dashboard() {
     setActiveChapter(null)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
+
+  const kpiMap = Object.fromEntries(kpis.map(k => [k.key, k]))
+  const openRisks = risks.filter(r => r.status === 'open').length
+
+  const headerPills = [
+    { num: kpiMap['code_camps']?.value          ?? '–', lbl: 'Code Camps',      color: 'blue' },
+    { num: kpiMap['form_submissions']?.value     ?? '–', lbl: 'Form Submissions', color: 'teal' },
+    { num: kpiMap['trained_mentors']?.value      ?? '–', lbl: 'Mentors Trained',  color: 'teal' },
+    { num: kpiMap['confirmed_deployments']?.value ?? '–', lbl: 'Deployments',     color: 'green' },
+    { num: kpiMap['completion_rate']?.value      ?? '–', lbl: 'Completion Rate',  color: 'green' },
+    { num: kpiMap['computer_labs']?.value        ?? '–', lbl: 'Labs Activated',   color: 'blue' },
+    { num: String(openRisks || '–'),                     lbl: 'Open Risks',       color: 'red' },
+    { num: '78d',                                        lbl: 'Days Left Q2',     color: 'yellow' },
+  ]
 
   return (
     <div className="relative z-[1] max-w-[1440px] mx-auto px-5 pt-7 pb-20">
@@ -88,21 +125,19 @@ export default function Dashboard() {
 
         {/* KPI pills row */}
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none" style={{ scrollbarWidth: 'none' }}>
-          {[
-            { num: '1/5', lbl: 'Code Camps', cls: 'border-[rgba(77,162,255,0.25)]', numCls: 'text-[#4DA2FF]' },
-            { num: '95',  lbl: 'Form Submissions', cls: 'border-[rgba(0,212,170,0.25)]', numCls: 'text-[#00D4AA]' },
-            { num: '35',  lbl: 'Mentors Trained', cls: 'border-[rgba(0,212,170,0.25)]', numCls: 'text-[#00D4AA]' },
-            { num: '86',  lbl: 'Deployments', cls: 'border-[rgba(0,212,170,0.4)]', numCls: 'text-[#00D4AA]' },
-            { num: '63.7%', lbl: 'Completion Rate', cls: 'border-[rgba(0,212,170,0.4)]', numCls: 'text-[#00D4AA]' },
-            { num: '3',   lbl: 'Labs Activated', cls: 'border-[rgba(77,162,255,0.25)]', numCls: 'text-[#4DA2FF]' },
-            { num: '9',   lbl: 'Open Risks', cls: 'border-[rgba(255,77,106,0.25)]', numCls: 'text-[#FF4D6A]' },
-            { num: '78d', lbl: 'Days Left Q2', cls: 'border-[rgba(255,181,71,0.3)]', numCls: 'text-[#FFB547]' },
-          ].map(p => (
-            <div key={p.lbl} className={`flex-shrink-0 bg-[#131C2E] border rounded-[7px] px-[14px] py-[9px] text-center min-w-[80px] ${p.cls}`}>
-              <span className={`block text-[18px] font-extrabold font-mono leading-[1.1] ${p.numCls}`}>{p.num}</span>
-              <span className="block text-[8px] text-[#7A8BA8] uppercase tracking-[0.07em] mt-[3px] whitespace-nowrap">{p.lbl}</span>
-            </div>
-          ))}
+          {headerPills.map(p => {
+            const pill = p.color === 'red'
+              ? { cls: 'border-[rgba(255,77,106,0.25)]', numCls: 'text-[#FF4D6A]' }
+              : p.color === 'yellow'
+              ? { cls: 'border-[rgba(255,181,71,0.3)]', numCls: 'text-[#FFB547]' }
+              : colorPillCls[p.color] ?? colorPillCls['blue']
+            return (
+              <div key={p.lbl} className={`flex-shrink-0 bg-[#131C2E] border rounded-[7px] px-[14px] py-[9px] text-center min-w-[80px] ${pill.cls}`}>
+                <span className={`block text-[18px] font-extrabold font-mono leading-[1.1] ${pill.numCls}`}>{p.num}</span>
+                <span className="block text-[8px] text-[#7A8BA8] uppercase tracking-[0.07em] mt-[3px] whitespace-nowrap">{p.lbl}</span>
+              </div>
+            )
+          })}
         </div>
       </header>
 
@@ -122,18 +157,18 @@ export default function Dashboard() {
           </button>
         ))}
 
-        {/* Chapter tabs */}
-        {CHAPTER_TABS.map(tab => (
+        {/* Chapter tabs derived from DB */}
+        {chapters.map(c => (
           <button
-            key={tab.id}
-            onClick={() => showChapter(tab.id)}
+            key={c.id}
+            onClick={() => showChapter(c.id)}
             className={`flex-shrink-0 px-4 py-[9px] rounded-md text-[11px] font-bold cursor-pointer transition-all tracking-[0.04em] uppercase whitespace-nowrap font-sans border ${
-              activeChapter === tab.id
+              activeChapter === c.id
                 ? 'bg-[#00D4AA] text-[#080C14] border-[#00D4AA]'
                 : 'bg-[rgba(0,212,170,0.08)] text-[#00D4AA] border-[rgba(0,212,170,0.2)] hover:bg-[rgba(0,212,170,0.15)]'
             }`}
           >
-            {tab.label}
+            Ch{c.number} {c.city}
           </button>
         ))}
       </div>
@@ -141,17 +176,17 @@ export default function Dashboard() {
       {/* PANELS */}
       <main>
         {activeChapter ? (
-          <ChapterDetailPanel chapterId={activeChapter} onBack={goBack} />
+          <ChapterDetailPanel chapterId={activeChapter} chapters={chapters} onBack={goBack} />
         ) : (
           <>
-            {activeTab === 'dsu'        && <DsuPanel onShowChapter={showChapter} />}
-            {activeTab === 'kpi'        && <KpiPanel />}
+            {activeTab === 'dsu'        && <DsuPanel chapters={chapters} kpis={kpis} onShowChapter={showChapter} />}
+            {activeTab === 'kpi'        && <KpiPanel kpis={kpis} chapters={chapters} />}
             {activeTab === 'milestones' && <MilestonesPanel />}
-            {activeTab === 'chapters'   && <ChaptersPanel onShowChapter={showChapter} />}
-            {activeTab === 'risks'      && <RisksPanel />}
-            {activeTab === 'merch'      && <MerchPanel />}
-            {activeTab === 'links'      && <LinksPanel onShowChapter={showChapter} />}
-            {activeTab === 'contacts'   && <ContactsPanel />}
+            {activeTab === 'chapters'   && <ChaptersPanel chapters={chapters} onShowChapter={showChapter} />}
+            {activeTab === 'risks'      && <RisksPanel risks={risks} />}
+            {activeTab === 'merch'      && <MerchPanel merch_items={merchItems} chapters={chapters} />}
+            {activeTab === 'links'      && <LinksPanel links={links} chapters={chapters} contacts={contacts} onShowChapter={showChapter} />}
+            {activeTab === 'contacts'   && <ContactsPanel contacts={contacts} />}
             {activeTab === 'content'    && <ContentPanel />}
           </>
         )}

@@ -1,9 +1,9 @@
-import { KPIS, PAX_ROWS, CHAPTERS } from '@/lib/data'
+import { PAX_ROWS } from '@/lib/data'
 import KpiTile from '@/components/ui/KpiTile'
 import SectionTitle from '@/components/ui/SectionTitle'
 import Card from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
-import type { BadgeVariant } from '@/lib/types'
+import type { Chapter, Kpi, BadgeVariant } from '@/lib/types'
 
 const statusBadge: Record<string, { variant: BadgeVariant; label: string }> = {
   completed:     { variant: 'done', label: '✓ Completed' },
@@ -14,12 +14,17 @@ const statusBadge: Record<string, { variant: BadgeVariant; label: string }> = {
   activating:    { variant: 'warn', label: '⚠ Activating' },
 }
 
-export default function KpiPanel() {
+interface Props {
+  kpis: Kpi[]
+  chapters: Chapter[]
+}
+
+export default function KpiPanel({ kpis, chapters }: Props) {
   return (
     <div className="animate-fade-in">
       {/* KPI Tiles */}
       <div className="grid grid-cols-[repeat(auto-fit,minmax(130px,1fr))] gap-[10px] mb-6">
-        {KPIS.map(k => (
+        {kpis.map(k => (
           <KpiTile key={k.id} value={k.value} label={k.label} sublabel={k.sublabel} color={k.color} />
         ))}
       </div>
@@ -88,7 +93,7 @@ export default function KpiPanel() {
             </tr>
           </thead>
           <tbody>
-            {CHAPTERS.map(c => {
+            {chapters.map(c => {
               const b = statusBadge[c.status]
               return (
                 <tr key={c.id} className="hover:[&>td]:bg-[rgba(77,162,255,0.03)] transition-colors">

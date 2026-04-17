@@ -1,17 +1,7 @@
-import { MERCH_ITEMS } from '@/lib/data'
 import SectionTitle from '@/components/ui/SectionTitle'
 import Card from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
-import type { BadgeVariant } from '@/lib/types'
-
-const chapterMerchStatus: { name: string; badge: BadgeVariant; label: string }[] = [
-  { name: 'Manila – NCR',       badge: 'done',    label: '✓ Distributed' },
-  { name: 'Tacloban – EV',      badge: 'warn',    label: '⚠ Confirm post-reschedule' },
-  { name: 'Iloilo (Code Camp)', badge: 'done',    label: '✓ Merch Sent' },
-  { name: 'Bukidnon',           badge: 'risk',    label: '⚠ Not Yet Sent' },
-  { name: 'Pampanga',           badge: 'warn',    label: '⚠ Pending — not yet packed' },
-  { name: 'Laguna',             badge: 'tbc',     label: 'TBC — slot not confirmed' },
-]
+import type { Chapter, MerchItem, BadgeVariant } from '@/lib/types'
 
 const vipKit: { item: string; badge: BadgeVariant; label: string }[] = [
   { item: 'Custom engraved pen "BUIDL | DEVCON x Sui"', badge: 'done', label: '✓ Confirmed' },
@@ -26,10 +16,22 @@ function statusBadge(status: string): { variant: BadgeVariant; label: string } {
   return { variant: 'pending', label: status }
 }
 
-export default function MerchPanel() {
-  const jcr = MERCH_ITEMS.filter(m => m.category === 'jcr')
-  const lazada = MERCH_ITEMS.filter(m => m.category === 'lazada')
-  const shopee = MERCH_ITEMS.filter(m => m.category === 'shopee')
+function getMerchBadge(merch_status: string): { variant: BadgeVariant; label: string } {
+  if (merch_status.startsWith('✓')) return { variant: 'done', label: merch_status }
+  if (merch_status.includes('TBC') || merch_status.toLowerCase().includes('tbc')) return { variant: 'tbc', label: merch_status }
+  if (merch_status.includes('Not Yet')) return { variant: 'risk', label: merch_status }
+  return { variant: 'warn', label: merch_status }
+}
+
+interface Props {
+  merch_items: MerchItem[]
+  chapters: Chapter[]
+}
+
+export default function MerchPanel({ merch_items, chapters }: Props) {
+  const jcr    = merch_items.filter(m => m.category === 'jcr')
+  const lazada = merch_items.filter(m => m.category === 'lazada')
+  const shopee = merch_items.filter(m => m.category === 'shopee')
 
   return (
     <div className="animate-fade-in">
@@ -45,12 +47,15 @@ export default function MerchPanel() {
         {/* Chapter Merch Status */}
         <Card>
           <SectionTitle>Chapter Merch Status</SectionTitle>
-          {chapterMerchStatus.map(c => (
-            <div key={c.name} className="flex items-center justify-between py-2 border-b border-[rgba(77,162,255,0.06)] last:border-b-0 text-[12px] gap-2">
-              <span><strong>{c.name}</strong></span>
-              <Badge variant={c.badge}>{c.label}</Badge>
-            </div>
-          ))}
+          {chapters.map(c => {
+            const m = getMerchBadge(c.merch_status)
+            return (
+              <div key={c.id} className="flex items-center justify-between py-2 border-b border-[rgba(77,162,255,0.06)] last:border-b-0 text-[12px] gap-2">
+                <span><strong>{c.name}</strong></span>
+                <Badge variant={m.variant}>{m.label}</Badge>
+              </div>
+            )
+          })}
         </Card>
 
         {/* VIP Kits */}

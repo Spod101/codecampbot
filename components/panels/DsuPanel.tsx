@@ -1,11 +1,10 @@
 'use client'
-import { CHAPTERS, KPIS } from '@/lib/data'
 import KpiTile from '@/components/ui/KpiTile'
 import SectionTitle from '@/components/ui/SectionTitle'
 import ProgressBar from '@/components/ui/ProgressBar'
 import Card from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
-import type { BadgeVariant } from '@/lib/types'
+import type { Chapter, Kpi, BadgeVariant } from '@/lib/types'
 
 const statusBadge: Record<string, { variant: BadgeVariant; label: string }> = {
   completed:     { variant: 'done', label: '✓ Done' },
@@ -34,14 +33,22 @@ const chapterDateColor: Record<string, string> = {
 }
 
 const campBorderColor: Record<string, string> = {
-  blue: 'border-l-[#4DA2FF]',
-  teal: 'border-l-[#00D4AA]',
+  blue:   'border-l-[#4DA2FF]',
+  teal:   'border-l-[#00D4AA]',
   yellow: 'border-l-[#FFB547]',
   purple: 'border-l-[#A78BFA]',
 }
 
-export default function DsuPanel({ onShowChapter }: { onShowChapter: (id: string) => void }) {
-  const high = CHAPTERS.filter(c => c.todos.some(t => t.status === 'urgent'))
+interface Props {
+  chapters: Chapter[]
+  kpis: Kpi[]
+  onShowChapter: (id: string) => void
+}
+
+export default function DsuPanel({ chapters, kpis, onShowChapter }: Props) {
+  const campChapters = chapters.filter(c => c.number !== '6')
+  const upcomingChapters = chapters.filter(c => c.id !== 'manila')
+  const chaptersWithTodos = chapters.filter(c => c.todos.length > 0)
 
   return (
     <div className="animate-fade-in">
@@ -63,7 +70,7 @@ export default function DsuPanel({ onShowChapter }: { onShowChapter: (id: string
       {/* KPI Grid */}
       <SectionTitle>📊 KPI Summary</SectionTitle>
       <div className="grid grid-cols-[repeat(auto-fit,minmax(130px,1fr))] gap-[10px] mb-5">
-        {KPIS.map(k => (
+        {kpis.map(k => (
           <KpiTile key={k.id} value={k.value} label={k.label} sublabel={k.sublabel} color={k.color} />
         ))}
       </div>
@@ -82,7 +89,7 @@ export default function DsuPanel({ onShowChapter }: { onShowChapter: (id: string
           </div>
           <ProgressBar percent={20} />
           <div className="flex flex-col gap-1 mt-2">
-            {CHAPTERS.filter(c => c.number !== '6').map(c => (
+            {campChapters.map(c => (
               <div key={c.id} className="flex items-center gap-[7px] text-[11px]">
                 <span className="w-[7px] h-[7px] rounded-full flex-shrink-0" style={{ background: dotColor[c.status] }} />
                 <span className="text-[#7A8BA8]">
@@ -119,7 +126,7 @@ export default function DsuPanel({ onShowChapter }: { onShowChapter: (id: string
       {/* Camp Schedule Cards */}
       <SectionTitle>📅 Camp Schedule & Countdown</SectionTitle>
       <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-[12px] mb-5">
-        {CHAPTERS.filter(c => c.id !== 'manila').map(chapter => {
+        {upcomingChapters.map(chapter => {
           const b = statusBadge[chapter.status]
           const bc = campBorderColor[chapter.color]
           return (
@@ -181,7 +188,7 @@ export default function DsuPanel({ onShowChapter }: { onShowChapter: (id: string
       {/* To-Do List Per Camp */}
       <SectionTitle>✅ To-Do List Per Camp</SectionTitle>
       <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-[12px] mb-5">
-        {CHAPTERS.filter(c => c.todos.length > 0).map(chapter => {
+        {chaptersWithTodos.map(chapter => {
           const labelColor = chapter.color === 'blue' ? '#4DA2FF' : chapter.color === 'teal' ? '#00D4AA' : chapter.color === 'yellow' ? '#FFB547' : '#A78BFA'
           return (
             <Card key={chapter.id}>
@@ -210,19 +217,19 @@ export default function DsuPanel({ onShowChapter }: { onShowChapter: (id: string
       <div className="p-[14px_16px] bg-[#0D1420] border border-[rgba(77,162,255,0.15)] rounded-lg">
         <div className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#7A8BA8] font-mono mb-2.5">Jump to Chapter</div>
         <div className="flex gap-2 flex-wrap">
-          {[
-            { id: 'manila', label: 'Ch1 Manila ✓', cls: 'bg-[rgba(0,212,170,0.1)] border-[rgba(0,212,170,0.3)] text-[#00D4AA]' },
-            { id: 'tacloban', label: 'Ch2 Tacloban ⚠', cls: 'bg-[rgba(255,181,71,0.1)] border-[rgba(255,181,71,0.3)] text-[#FFB547]' },
-            { id: 'iloilo', label: 'Ch3 Iloilo 🔄', cls: 'bg-[rgba(77,162,255,0.1)] border-[rgba(77,162,255,0.3)] text-[#4DA2FF]' },
-            { id: 'bukidnon', label: 'Ch4 Bukidnon', cls: 'bg-[rgba(0,212,170,0.1)] border-[rgba(0,212,170,0.3)] text-[#00D4AA]' },
-            { id: 'pampanga', label: 'Ch5 Pampanga', cls: 'bg-[rgba(77,162,255,0.1)] border-[rgba(77,162,255,0.3)] text-[#4DA2FF]' },
-            { id: 'laguna', label: 'Ch6 Laguna TBC', cls: 'bg-[rgba(167,139,250,0.1)] border-[rgba(167,139,250,0.3)] text-[#A78BFA]' },
-          ].map(b => (
-            <button key={b.id} onClick={() => onShowChapter(b.id)}
-              className={`px-[13px] py-[7px] rounded-md text-[11px] font-bold border transition-all hover:opacity-80 hover:-translate-y-[1px] font-sans ${b.cls}`}>
-              {b.label}
-            </button>
-          ))}
+          {chapters.map(c => {
+            const color = c.color === 'teal' ? { cls: 'bg-[rgba(0,212,170,0.1)] border-[rgba(0,212,170,0.3)] text-[#00D4AA]' }
+              : c.color === 'yellow' ? { cls: 'bg-[rgba(255,181,71,0.1)] border-[rgba(255,181,71,0.3)] text-[#FFB547]' }
+              : c.color === 'purple' ? { cls: 'bg-[rgba(167,139,250,0.1)] border-[rgba(167,139,250,0.3)] text-[#A78BFA]' }
+              : { cls: 'bg-[rgba(77,162,255,0.1)] border-[rgba(77,162,255,0.3)] text-[#4DA2FF]' }
+            const icon = c.status === 'completed' ? ' ✓' : c.status === 'rescheduling' ? ' ⚠' : c.status === 'in_progress' ? ' 🔄' : c.status === 'tbc' ? ' TBC' : ''
+            return (
+              <button key={c.id} onClick={() => onShowChapter(c.id)}
+                className={`px-[13px] py-[7px] rounded-md text-[11px] font-bold border transition-all hover:opacity-80 hover:-translate-y-[1px] font-sans ${color.cls}`}>
+                Ch{c.number} {c.city}{icon}
+              </button>
+            )
+          })}
         </div>
       </div>
     </div>

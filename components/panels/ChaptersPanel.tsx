@@ -1,10 +1,9 @@
 'use client'
-import { CHAPTERS } from '@/lib/data'
 import SectionTitle from '@/components/ui/SectionTitle'
 import Badge from '@/components/ui/Badge'
 import ProgressBar from '@/components/ui/ProgressBar'
 import Card from '@/components/ui/Card'
-import type { BadgeVariant } from '@/lib/types'
+import type { Chapter, BadgeVariant } from '@/lib/types'
 
 const statusBadge: Record<string, { variant: BadgeVariant; label: string }> = {
   completed:     { variant: 'done', label: '✓ Completed' },
@@ -15,16 +14,19 @@ const statusBadge: Record<string, { variant: BadgeVariant; label: string }> = {
   activating:    { variant: 'warn', label: '⚠ Activating' },
 }
 
-const merchBadge: Record<string, { variant: BadgeVariant; label: string }> = {
-  'manila':    { variant: 'done', label: '✓ Distributed' },
-  'tacloban':  { variant: 'warn', label: '⚠ Check' },
-  'iloilo':    { variant: 'done', label: '✓ Merch Sent' },
-  'bukidnon':  { variant: 'risk', label: '⚠ Not Yet Sent' },
-  'pampanga':  { variant: 'warn', label: '📌 Pencil-booked' },
-  'laguna':    { variant: 'tbc', label: '⚠ TBC' },
+function getMerchBadge(merch_status: string): { variant: BadgeVariant; label: string } {
+  if (merch_status.startsWith('✓')) return { variant: 'done', label: merch_status }
+  if (merch_status.includes('TBC') || merch_status.toLowerCase().includes('tbc')) return { variant: 'tbc', label: merch_status }
+  if (merch_status.includes('Not Yet')) return { variant: 'risk', label: merch_status }
+  return { variant: 'warn', label: merch_status }
 }
 
-export default function ChaptersPanel({ onShowChapter }: { onShowChapter: (id: string) => void }) {
+interface Props {
+  chapters: Chapter[]
+  onShowChapter: (id: string) => void
+}
+
+export default function ChaptersPanel({ chapters, onShowChapter }: Props) {
   return (
     <div className="animate-fade-in">
       <div className="bg-[rgba(77,162,255,0.06)] border border-[rgba(77,162,255,0.2)] rounded-lg p-[11px_14px] text-[12px] text-[#7A8BA8] leading-[1.7] mb-4">
@@ -42,9 +44,9 @@ export default function ChaptersPanel({ onShowChapter }: { onShowChapter: (id: s
             </tr>
           </thead>
           <tbody>
-            {CHAPTERS.map(c => {
+            {chapters.map(c => {
               const b = statusBadge[c.status]
-              const m = merchBadge[c.id]
+              const m = getMerchBadge(c.merch_status)
               return (
                 <tr key={c.id} className="cursor-pointer hover:[&>td]:bg-[rgba(77,162,255,0.03)]" onClick={() => onShowChapter(c.id)}>
                   <td className="p-[10px_13px] border-b border-[rgba(77,162,255,0.06)] font-mono">{c.number}</td>
@@ -66,7 +68,7 @@ export default function ChaptersPanel({ onShowChapter }: { onShowChapter: (id: s
       {/* Chapter Quick Cards */}
       <SectionTitle>Chapter Detail Cards</SectionTitle>
       <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-[12px]">
-        {CHAPTERS.map(c => {
+        {chapters.map(c => {
           const b = statusBadge[c.status]
           const labelColor = c.color === 'blue' ? '#4DA2FF' : c.color === 'teal' ? '#00D4AA' : c.color === 'yellow' ? '#FFB547' : '#A78BFA'
           return (

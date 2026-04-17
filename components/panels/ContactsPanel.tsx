@@ -1,5 +1,5 @@
-import { CONTACTS } from '@/lib/data'
 import SectionTitle from '@/components/ui/SectionTitle'
+import type { Contact } from '@/lib/types'
 
 function ContactCard({ emoji, name, role, handle, note }: {
   emoji: string; name: string; role: string; handle: string; note?: string | null
@@ -22,10 +22,14 @@ function ContactCard({ emoji, name, role, handle, note }: {
   )
 }
 
-export default function ContactsPanel() {
-  const sui = CONTACTS.filter(c => c.team === 'sui_foundation')
-  const leads = CONTACTS.filter(c => c.team === 'chapter_lead')
-  const content = CONTACTS.filter(c => c.team === 'content_team')
+interface Props {
+  contacts: Contact[]
+}
+
+export default function ContactsPanel({ contacts }: Props) {
+  const sui     = contacts.filter(c => c.team === 'sui_foundation')
+  const leads   = contacts.filter(c => c.team === 'chapter_lead')
+  const content = contacts.filter(c => c.team === 'content_team')
 
   return (
     <div className="animate-fade-in">

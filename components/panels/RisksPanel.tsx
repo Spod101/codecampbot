@@ -1,7 +1,6 @@
-import { RISKS } from '@/lib/data'
 import SectionTitle from '@/components/ui/SectionTitle'
-import Card from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
+import type { Risk } from '@/lib/types'
 
 const sevStyles = {
   high:   { cls: 'bg-[rgba(255,77,106,0.15)] text-[#FF4D6A]', label: '🔴 HIGH' },
@@ -14,10 +13,14 @@ const tagVariant: Record<string, 'warn' | 'risk' | 'pending' | 'tbc' | 'done'> =
   'Pampanga': 'warn', 'All Chapters': 'warn', 'All': 'warn', 'HQ': 'pending',
 }
 
-export default function RisksPanel() {
-  const high   = RISKS.filter(r => r.severity === 'high').length
-  const medium = RISKS.filter(r => r.severity === 'medium').length
-  const low    = RISKS.filter(r => r.severity === 'low').length
+interface Props {
+  risks: Risk[]
+}
+
+export default function RisksPanel({ risks }: Props) {
+  const high   = risks.filter(r => r.severity === 'high').length
+  const medium = risks.filter(r => r.severity === 'medium').length
+  const low    = risks.filter(r => r.severity === 'low').length
 
   return (
     <div className="animate-fade-in">
@@ -27,7 +30,7 @@ export default function RisksPanel() {
           { count: high,   label: '🔴 High',   border: 'rgba(255,77,106,0.3)',  color: '#FF4D6A' },
           { count: medium, label: '🟡 Medium', border: 'rgba(255,181,71,0.3)',  color: '#FFB547' },
           { count: low,    label: '🟢 Low',    border: 'rgba(0,212,170,0.3)',   color: '#00D4AA' },
-          { count: RISKS.filter(r => r.status === 'open').length, label: 'Total Open', border: 'rgba(77,162,255,0.15)', color: '#7A8BA8' },
+          { count: risks.filter(r => r.status === 'open').length, label: 'Total Open', border: 'rgba(77,162,255,0.15)', color: '#7A8BA8' },
         ].map(s => (
           <div key={s.label} className="flex-1 min-w-[110px] text-center bg-[#0D1420] rounded-[10px] p-[18px] border" style={{ borderColor: s.border }}>
             <div className="text-[28px] font-extrabold font-mono" style={{ color: s.color }}>{s.count}</div>
@@ -38,7 +41,7 @@ export default function RisksPanel() {
 
       <SectionTitle>Active Risk Register</SectionTitle>
 
-      {RISKS.map(risk => {
+      {risks.map(risk => {
         const sev = sevStyles[risk.severity]
         const tv = tagVariant[risk.chapter_tag] ?? 'pending'
         return (

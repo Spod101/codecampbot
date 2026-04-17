@@ -1,10 +1,9 @@
 'use client'
-import { CHAPTERS } from '@/lib/data'
 import SectionTitle from '@/components/ui/SectionTitle'
 import Badge from '@/components/ui/Badge'
 import ProgressBar from '@/components/ui/ProgressBar'
 import Card from '@/components/ui/Card'
-import type { BadgeVariant } from '@/lib/types'
+import type { Chapter, BadgeVariant } from '@/lib/types'
 
 const statusBadge: Record<string, { variant: BadgeVariant; label: string }> = {
   completed:     { variant: 'done', label: '✓ COMPLETED' },
@@ -64,8 +63,14 @@ const chapterNotes: Record<string, string[]> = {
   ],
 }
 
-export default function ChapterDetailPanel({ chapterId, onBack }: { chapterId: string; onBack: () => void }) {
-  const chapter = CHAPTERS.find(c => c.id === chapterId)
+interface Props {
+  chapterId: string
+  chapters: Chapter[]
+  onBack: () => void
+}
+
+export default function ChapterDetailPanel({ chapterId, chapters, onBack }: Props) {
+  const chapter = chapters.find(c => c.id === chapterId)
   if (!chapter) return null
 
   const b = statusBadge[chapter.status]
