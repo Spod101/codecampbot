@@ -125,6 +125,29 @@ create table if not exists bot_settings (
   updated_at timestamptz default now()
 );
 
+-- Prevent duplicate logical rows on repeated seeds/imports
+create unique index if not exists risks_code_unique_idx
+  on risks ((upper(trim(code))));
+
+create unique index if not exists merch_items_category_name_unique_idx
+  on merch_items ((lower(trim(category))), (lower(trim(name))));
+
+create unique index if not exists contacts_identity_unique_idx
+  on contacts (
+    (lower(trim(name))),
+    (lower(trim(role))),
+    (lower(trim(handle))),
+    (lower(trim(team))),
+    (coalesce(chapter_number, ''))
+  );
+
+create unique index if not exists resource_links_identity_unique_idx
+  on resource_links (
+    (lower(trim(name))),
+    (lower(trim(url))),
+    (lower(trim(category)))
+  );
+
 -- ────────────────────────────────────────────────────────────
 -- ROW LEVEL SECURITY (public read, authenticated write)
 -- ────────────────────────────────────────────────────────────

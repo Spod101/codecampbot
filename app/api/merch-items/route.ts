@@ -17,6 +17,25 @@ export async function POST(req: NextRequest) {
   }
 
   const supabase = db()
+  const normalizedCategory = String(category).trim().toLowerCase()
+  const normalizedName = name.trim().toLowerCase()
+
+  // Prevent duplicate item creates when seed data or requests repeat.
+  const { data: existingItems, error: existingItemsError } = await supabase
+    .from('merch_items')
+    .select('id, category, name')
+
+  if (existingItemsError) return NextResponse.json({ ok: false, error: existingItemsError.message }, { status: 500 })
+
+  const duplicate = (existingItems ?? []).find(item =>
+    item.category.trim().toLowerCase() === normalizedCategory &&
+    item.name.trim().toLowerCase() === normalizedName
+  )
+
+  if (duplicate) {
+    return NextResponse.json({ ok: false, error: 'Duplicate merch item already exists', duplicateId: duplicate.id }, { status: 409 })
+  }
+
   const { data, error } = await supabase
     .from('merch_items')
     .insert({
@@ -24,7 +43,7 @@ export async function POST(req: NextRequest) {
       quantity: Number(quantity) || 0,
       distribution: distribution?.trim() ?? '',
       status: status ?? 'pending',
-      category,
+      category: normalizedCategory,
     })
     .select()
     .single()

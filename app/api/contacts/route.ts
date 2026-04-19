@@ -19,6 +19,33 @@ export async function POST(req: NextRequest) {
   }
 
   const supabase = db()
+  const normalized = {
+    name: name.trim().toLowerCase(),
+    role: role.trim().toLowerCase(),
+    handle: handle?.trim().toLowerCase() ?? '',
+    team,
+    chapter_number: chapter_number?.trim() ?? '',
+  }
+
+  // Prevent duplicate contact entries from repeated inserts.
+  const { data: existingContacts, error: existingContactsError } = await supabase
+    .from('contacts')
+    .select('id, name, role, handle, team, chapter_number')
+
+  if (existingContactsError) return NextResponse.json({ ok: false, error: existingContactsError.message }, { status: 500 })
+
+  const duplicate = (existingContacts ?? []).find(contact =>
+    contact.name.trim().toLowerCase() === normalized.name &&
+    contact.role.trim().toLowerCase() === normalized.role &&
+    (contact.handle ?? '').trim().toLowerCase() === normalized.handle &&
+    contact.team === normalized.team &&
+    (contact.chapter_number ?? '').trim() === normalized.chapter_number
+  )
+
+  if (duplicate) {
+    return NextResponse.json({ ok: false, error: 'Duplicate contact already exists', duplicateId: duplicate.id }, { status: 409 })
+  }
+
   const { data, error } = await supabase
     .from('contacts')
     .insert({

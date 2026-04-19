@@ -17,6 +17,27 @@ export async function POST(req: NextRequest) {
   }
 
   const supabase = db()
+  const normalizedTitle = title.trim().toLowerCase()
+  const normalizedChapterTag = (chapter_tag?.trim() ?? 'All').toLowerCase()
+
+  // Prevent creating duplicate active risks with the same title and chapter tag.
+  const { data: openRisks, error: openRisksError } = await supabase
+    .from('risks')
+    .select('id, title, chapter_tag')
+    .eq('status', 'open')
+
+  if (openRisksError) {
+    return NextResponse.json({ ok: false, error: openRisksError.message }, { status: 500 })
+  }
+
+  const duplicate = (openRisks ?? []).find(r =>
+    r.title.trim().toLowerCase() === normalizedTitle &&
+    r.chapter_tag.trim().toLowerCase() === normalizedChapterTag
+  )
+
+  if (duplicate) {
+    return NextResponse.json({ ok: false, error: 'Duplicate open risk already exists', duplicateId: duplicate.id }, { status: 409 })
+  }
 
   // Auto-generate risk code
   const { data: existing } = await supabase.from('risks').select('code').order('created_at', { ascending: false }).limit(1)
