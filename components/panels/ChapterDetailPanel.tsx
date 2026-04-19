@@ -234,7 +234,7 @@ export default function ChapterDetailPanel({ chapterId, chapters, onBack, onRefr
   ]
 
   return (
-    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '34px' }}>
 
       {/* Back button */}
       <button
@@ -247,7 +247,7 @@ export default function ChapterDetailPanel({ chapterId, chapters, onBack, onRefr
       </button>
 
       {/* ── Hero card ────────────────────────────────────────────────────── */}
-      <div style={{ position: 'relative', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '18px', padding: '28px', overflow: 'hidden' }}>
+      <div style={{ position: 'relative', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '24px', padding: '34px', overflow: 'hidden' }}>
         {/* Top accent line */}
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: `linear-gradient(90deg, ${accent}, transparent)` }} />
         {/* Faded chapter number */}
@@ -288,9 +288,9 @@ export default function ChapterDetailPanel({ chapterId, chapters, onBack, onRefr
       </div>
 
       {/* ── Stat tiles ───────────────────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: '8px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: '12px' }}>
         {statTiles.map(t => (
-          <div key={t.label} style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '14px', padding: '16px 14px', textAlign: 'center' }}>
+          <div key={t.label} style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '18px', padding: '20px 16px', textAlign: 'center' }}>
             <div style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#475569', marginBottom: '8px' }}>{t.label}</div>
             <div style={{ fontSize: '13px', fontWeight: 800, color: t.color, lineHeight: 1.2 }}>{t.value}</div>
           </div>
@@ -298,7 +298,7 @@ export default function ChapterDetailPanel({ chapterId, chapters, onBack, onRefr
       </div>
 
       {/* ── Content update alert ─────────────────────────────────────────── */}
-      <div style={{ display: 'flex', gap: '10px', padding: '12px 16px', background: 'rgba(6,182,212,0.06)', border: '1px solid rgba(6,182,212,0.2)', borderRadius: '12px', fontSize: '12px', color: '#8899aa' }}>
+      <div style={{ display: 'flex', gap: '10px', padding: '16px 20px', background: 'rgba(6,182,212,0.06)', border: '1px solid rgba(6,182,212,0.2)', borderRadius: '16px', fontSize: '13px', color: '#8899aa', lineHeight: 1.7 }}>
         <span style={{ fontSize: '13px', flexShrink: 0 }}>📋</span>
         <span>
           <strong style={{ color: '#06b6d4' }}>Content Update:</strong> Mike and Lady are updating the code camp content, installation guide, and installation procedures based on learnings from the Letran pilot. All subsequent chapters will use the updated version.
@@ -345,7 +345,7 @@ export default function ChapterDetailPanel({ chapterId, chapters, onBack, onRefr
           </div>
 
           {/* Checklist rows */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {checklist.map((item, i) => <CheckRow key={i} item={item} />)}
           </div>
         </div>
@@ -369,7 +369,7 @@ export default function ChapterDetailPanel({ chapterId, chapters, onBack, onRefr
             No tasks yet. Click + Add Task to create one.
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {todos.map(t => {
               const statusColor = TASK_STATUS_COLOR[t.status] ?? '#475569'
               return (
@@ -451,7 +451,7 @@ export default function ChapterDetailPanel({ chapterId, chapters, onBack, onRefr
       />
 
       {/* ── Pilot Notes ──────────────────────────────────────────────────── */}
-      <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '14px', padding: '20px 22px' }}>
+      <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '18px', padding: '26px 28px' }}>
         <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#06b6d4', marginBottom: '14px' }}>
           Pilot Notes — for all chapters
         </p>
@@ -469,7 +469,7 @@ export default function ChapterDetailPanel({ chapterId, chapters, onBack, onRefr
       {chapter.status === 'completed' && (
         <div>
           <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#64748b', marginBottom: '14px' }}>Post-Event SITREP Template</p>
-          <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '14px', padding: '20px' }}>
+          <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '18px', padding: '24px' }}>
             <pre style={{ fontSize: '10px', color: '#64748b', lineHeight: 1.9, whiteSpace: 'pre-wrap', margin: 0 }}>{`EVENT SITREP — ${chapter.name}
 Date:         ${chapter.date_text}
 Lead:         ${chapter.lead_name}

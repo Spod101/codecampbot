@@ -75,7 +75,7 @@ export default function ChaptersPanel({ chapters, onShowChapter, onRefresh }: { 
   ]
 
   return (
-    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
       <PanelHeader
         eyebrow="Q2 2026"
         title="All Chapters"
@@ -88,11 +88,11 @@ export default function ChaptersPanel({ chapters, onShowChapter, onRefresh }: { 
       />
 
       {/* Stat tiles */}
-      <div className="grid grid-cols-4 gap-3">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(170px,1fr))', gap: '16px' }}>
         {stats.map((s, i) => {
           const c = STAT_COLORS[i]
           return (
-            <div key={s.lbl} style={{ background: c.bg, border: `1px solid ${c.border}`, borderRadius: '16px', padding: '20px', textAlign: 'center' }}>
+            <div key={s.lbl} style={{ background: c.bg, border: `1px solid ${c.border}`, borderRadius: '20px', padding: '26px', textAlign: 'center' }}>
               <div style={{ fontSize: '34px', fontWeight: 800, color: c.color, lineHeight: 1 }}>{s.n}</div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', marginTop: '8px' }}>
                 <span style={{ fontSize: '10px' }}>{s.dot}</span>
@@ -106,7 +106,7 @@ export default function ChaptersPanel({ chapters, onShowChapter, onRefresh }: { 
       {/* Chapter card rows */}
       <div>
         <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#64748b', marginBottom: '14px' }}>Chapter Overview</p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {chapters.map(c => {
             const b      = statusBadge[c.status]
             const m      = getMerchBadge(c.merch_status)
@@ -115,7 +115,7 @@ export default function ChaptersPanel({ chapters, onShowChapter, onRefresh }: { 
               <div
                 key={c.id}
                 onClick={() => onShowChapter(c.id)}
-                style={{ display: 'grid', gridTemplateColumns: '28px 1fr auto auto auto', gap: '14px', alignItems: 'center', padding: '16px 18px', background: '#0f172a', border: '1px solid #1e293b', borderLeft: `3px solid ${accent}`, borderRadius: '14px', cursor: 'pointer', transition: 'border-color .2s' }}
+                style={{ display: 'grid', gridTemplateColumns: '28px 1fr auto auto auto', gap: '16px', alignItems: 'center', padding: '20px 22px', background: '#0f172a', border: '1px solid #1e293b', borderLeft: `3px solid ${accent}`, borderRadius: '18px', cursor: 'pointer', transition: 'border-color .2s' }}
                 onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(6,182,212,0.35)')}
                 onMouseLeave={e => { e.currentTarget.style.borderLeft = `3px solid ${accent}`; e.currentTarget.style.borderColor = '#1e293b' }}
               >
@@ -191,7 +191,7 @@ export default function ChaptersPanel({ chapters, onShowChapter, onRefresh }: { 
       </SlideOver>
 
       {/* Quick nav */}
-      <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', padding: '20px' }}>
+      <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '20px', padding: '24px' }}>
         <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#64748b', marginBottom: '12px' }}>Quick Navigation</p>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           {chapters.map(c => {

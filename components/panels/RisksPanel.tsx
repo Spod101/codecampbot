@@ -89,7 +89,7 @@ export default function RisksPanel({ risks, setRisks, onRefresh }: Props) {
   }
 
   return (
-    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
       <PanelHeader
         eyebrow="Operations"
         title="Risk Register"
@@ -110,13 +110,13 @@ export default function RisksPanel({ risks, setRisks, onRefresh }: Props) {
       />
 
       {/* Stat tiles */}
-      <div className="grid grid-cols-3 gap-3">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: '16px' }}>
         {[
           { n: high,   lbl: 'High Severity',   ...SEV.high   },
           { n: medium, lbl: 'Medium Severity',  ...SEV.medium },
           { n: low,    lbl: 'Low Severity',     ...SEV.low    },
         ].map(s => (
-          <div key={s.lbl} style={{ background: s.bg, border: `1px solid ${s.border}`, borderRadius: '16px', padding: '24px', textAlign: 'center' }}>
+          <div key={s.lbl} style={{ background: s.bg, border: `1px solid ${s.border}`, borderRadius: '20px', padding: '30px', textAlign: 'center' }}>
             <div style={{ fontSize: '40px', fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.n}</div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '10px' }}>
               <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: s.color }} />
@@ -140,7 +140,7 @@ export default function RisksPanel({ risks, setRisks, onRefresh }: Props) {
           </button>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {visible.map(risk => {
             const sev = SEV[risk.severity] ?? SEV.low
             const tv  = tagVariant[risk.chapter_tag] ?? 'pending'
@@ -152,11 +152,11 @@ export default function RisksPanel({ risks, setRisks, onRefresh }: Props) {
                 onMouseLeave={() => setHoverId(null)}
                 style={{
                   display: 'grid', gridTemplateColumns: '28px 1fr auto', gap: '14px',
-                  alignItems: 'flex-start', padding: '16px 18px',
+                  alignItems: 'flex-start', padding: '20px 22px',
                   background: '#0f172a',
                   border: '1px solid #1e293b',
                   borderLeft: `3px solid ${resolved ? '#334155' : sev.color}`,
-                  borderRadius: '14px', transition: 'border-color .2s',
+                  borderRadius: '18px', transition: 'border-color .2s',
                   opacity: resolved ? 0.5 : 1,
                 }}
                 onMouseOver={e => (e.currentTarget.style.borderColor = 'rgba(6,182,212,0.35)')}

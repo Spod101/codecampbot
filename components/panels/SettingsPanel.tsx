@@ -25,8 +25,8 @@ function Card({ title, icon, badge, badgeColor, children }: {
   title: string; icon: string; badge?: string; badgeColor?: string; children: React.ReactNode
 }) {
   return (
-    <div style={{ background: C.surface, borderRadius: '20px', padding: '24px', border: `1px solid ${C.border}` }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+    <div style={{ background: C.surface, borderRadius: '24px', padding: '30px', border: `1px solid ${C.border}` }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(6,182,212,0.1)', border: '1px solid rgba(6,182,212,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>
             {icon}
@@ -188,13 +188,13 @@ export default function SettingsPanel() {
 
   return (
     <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-      <div style={{ marginBottom: '28px' }}>
+      <div style={{ marginBottom: '36px' }}>
         <div style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: C.muted, marginBottom: '8px' }}>Configuration</div>
-        <h1 style={{ fontSize: '30px', fontWeight: 800, color: C.text, marginBottom: '6px' }}>Settings</h1>
-        <p style={{ fontSize: '14px', color: C.dim }}>Telegram integration and standup configuration</p>
+        <h1 style={{ fontSize: '38px', fontWeight: 800, color: C.text, marginBottom: '8px', lineHeight: 1.1 }}>Settings</h1>
+        <p style={{ fontSize: '16px', color: C.dim, lineHeight: 1.7 }}>Telegram integration and standup configuration</p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: '28px', alignItems: 'start' }}>
 
         <Card title="Telegram Bot" icon="🤖" badge={connectedBadge} badgeColor={connectedColor}>
           <Input label="Bot Token" value={token} onChange={setToken} type="password" mono />

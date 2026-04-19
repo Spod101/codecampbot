@@ -29,8 +29,8 @@ function getMerchBadge(s: string): { variant: BadgeVariant; label: string } {
 
 const CARD: React.CSSProperties = {
   display: 'grid', gridTemplateColumns: '28px 1fr auto', gap: '14px',
-  alignItems: 'center', padding: '14px 18px',
-  background: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px',
+  alignItems: 'center', padding: '18px 22px',
+  background: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px',
   transition: 'border-color .2s',
 }
 
@@ -113,7 +113,7 @@ export default function MerchPanel({ merch_items, chapters, onRefresh }: { merch
     setForm(prev => ({ ...prev, [field]: e.target.value }))
 
   return (
-    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
       <PanelHeader
         eyebrow="Operations"
         title="Merchandise"
@@ -121,13 +121,13 @@ export default function MerchPanel({ merch_items, chapters, onRefresh }: { merch
       />
 
       {/* Stat tiles */}
-      <div className="grid grid-cols-3 gap-3">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: '16px' }}>
         {[
           { n: received,      lbl: 'Chapters Ready',    color: '#14b8a6', bg: 'rgba(20,184,166,0.08)',  border: 'rgba(20,184,166,0.25)'  },
           { n: pending,       lbl: 'Pending / Not Sent',color: '#f59e0b', bg: 'rgba(245,158,11,0.08)',  border: 'rgba(245,158,11,0.25)'  },
           { n: 25,            lbl: 'VIP Kits Total',    color: '#06b6d4', bg: 'rgba(6,182,212,0.08)',   border: 'rgba(6,182,212,0.25)'   },
         ].map(s => (
-          <div key={s.lbl} style={{ background: s.bg, border: `1px solid ${s.border}`, borderRadius: '16px', padding: '22px', textAlign: 'center' }}>
+          <div key={s.lbl} style={{ background: s.bg, border: `1px solid ${s.border}`, borderRadius: '20px', padding: '28px', textAlign: 'center' }}>
             <div style={{ fontSize: '36px', fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.n}</div>
             <div style={{ fontSize: '9px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, marginTop: '8px' }}>{s.lbl}</div>
           </div>
@@ -141,15 +141,15 @@ export default function MerchPanel({ merch_items, chapters, onRefresh }: { merch
       </div>
 
       {/* Chapter merch + VIP kits side by side */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: '20px' }}>
         {/* Chapter status */}
         <div>
           <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#64748b', marginBottom: '12px' }}>Chapter Merch Status</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {chapters.map(c => {
               const m = getMerchBadge(c.merch_status)
               return (
-                <div key={c.id} style={{ display: 'grid', gridTemplateColumns: '28px 1fr auto', gap: '12px', alignItems: 'center', padding: '12px 16px', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px', transition: 'border-color .2s' }}
+                <div key={c.id} style={{ display: 'grid', gridTemplateColumns: '28px 1fr auto', gap: '12px', alignItems: 'center', padding: '16px 20px', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', transition: 'border-color .2s' }}
                   onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(6,182,212,0.3)')}
                   onMouseLeave={e => (e.currentTarget.style.borderColor = '#1e293b')}>
                   <span style={{ fontSize: '11px', color: '#475569', fontFamily: 'monospace', fontWeight: 700 }}>{c.number}</span>
@@ -164,9 +164,9 @@ export default function MerchPanel({ merch_items, chapters, onRefresh }: { merch
         {/* VIP Kits */}
         <div>
           <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#64748b', marginBottom: '12px' }}>VIP Kits — 25 Total</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {vipKit.map(v => (
-              <div key={v.item} style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '12px', alignItems: 'center', padding: '12px 16px', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px', transition: 'border-color .2s' }}
+              <div key={v.item} style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '12px', alignItems: 'center', padding: '16px 20px', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', transition: 'border-color .2s' }}
                 onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(6,182,212,0.3)')}
                 onMouseLeave={e => (e.currentTarget.style.borderColor = '#1e293b')}>
                 <span style={{ fontSize: '11px', color: '#8899aa' }}>{v.item}</span>
@@ -192,7 +192,7 @@ export default function MerchPanel({ merch_items, chapters, onRefresh }: { merch
       </div>
 
       {/* Lazada + Shopee */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: '20px' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
             <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#64748b', margin: 0 }}>Lazada Orders</p>

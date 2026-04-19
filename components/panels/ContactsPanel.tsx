@@ -18,7 +18,7 @@ function ContactRow({ c, accent, onEdit, onDelete }: { c: Contact; accent: strin
   const [hovered, setHovered] = useState(false)
   return (
     <div
-      style={{ display: 'grid', gridTemplateColumns: '40px 1fr auto auto', gap: '14px', alignItems: 'center', padding: '14px 18px', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '14px', transition: 'border-color .2s' }}
+      style={{ display: 'grid', gridTemplateColumns: '40px 1fr auto auto', gap: '16px', alignItems: 'center', padding: '18px 22px', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '18px', transition: 'border-color .2s' }}
       onMouseEnter={e => { (e.currentTarget.style.borderColor = 'rgba(6,182,212,0.35)'); setHovered(true) }}
       onMouseLeave={e => { (e.currentTarget.style.borderColor = '#1e293b'); setHovered(false) }}
     >
@@ -99,7 +99,7 @@ export default function ContactsPanel({ contacts, onRefresh }: { contacts: Conta
     setForm(prev => ({ ...prev, [field]: e.target.value }))
 
   return (
-    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '42px' }}>
       <PanelHeader
         eyebrow="Team"
         title="Contacts"
@@ -115,12 +115,12 @@ export default function ContactsPanel({ contacts, onRefresh }: { contacts: Conta
       />
 
       {/* Stat tiles */}
-      <div className="grid grid-cols-3 gap-3">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: '16px' }}>
         {teamKeys.map(key => {
           const cfg = TEAMS[key]
           const count = grouped[key].length
           return (
-            <div key={key} style={{ background: cfg.bg, border: `1px solid ${cfg.border}`, borderRadius: '16px', padding: '22px', textAlign: 'center' }}>
+            <div key={key} style={{ background: cfg.bg, border: `1px solid ${cfg.border}`, borderRadius: '20px', padding: '28px', textAlign: 'center' }}>
               <div style={{ fontSize: '36px', fontWeight: 800, color: cfg.color, lineHeight: 1 }}>{count}</div>
               <div style={{ fontSize: '9px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, marginTop: '8px' }}>{cfg.label}</div>
             </div>
@@ -136,7 +136,7 @@ export default function ContactsPanel({ contacts, onRefresh }: { contacts: Conta
         return (
           <div key={key}>
             <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#64748b', marginBottom: '14px' }}>{cfg.label}</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {list.map(c => (
                 <ContactRow
                   key={c.id} c={c} accent={cfg.color}

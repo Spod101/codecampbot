@@ -125,15 +125,15 @@ function CalendarModal({ chapters, onClose }: { chapters: Chapter[]; onClose: ()
 
   return (
     <div
-      style={{ position:'fixed', inset:0, zIndex:1000, display:'flex', alignItems:'flex-start', justifyContent:'flex-start', paddingTop:'90px', paddingLeft:'300px', background:'rgba(2,6,23,0.8)', backdropFilter:'blur(6px)' }}
+      style={{ position:'fixed', inset:0, zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center', padding:'24px 24px 24px 304px', background:'rgba(2,6,23,0.8)', backdropFilter:'blur(6px)' }}
       onClick={onClose}
     >
       <div
-        style={{ width:'700px', background:C.border, borderRadius:'24px', boxShadow:'0 25px 80px rgba(0,0,0,0.9)', display:'flex', overflow:'hidden', animation:'slideDown .3s ease-out' }}
+        style={{ width:'min(980px, calc(100vw - 360px))', maxHeight:'calc(100vh - 120px)', background:C.border, borderRadius:'24px', boxShadow:'0 25px 80px rgba(0,0,0,0.9)', display:'grid', gridTemplateColumns:'minmax(300px,340px) 1fr', overflow:'hidden', animation:'slideDown .3s ease-out' }}
         onClick={e => e.stopPropagation()}
       >
         {/* Left — date selector */}
-        <div style={{ width:'320px', padding:'24px', flexShrink:0, borderRight:`1px solid ${C.border}` }}>
+        <div style={{ padding:'24px', borderRight:`1px solid ${C.border}` }}>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'20px' }}>
             <button style={chevron} onClick={() => setYm(p => p.month === 0 ? { year:p.year-1, month:11 } : { ...p, month:p.month-1 })}>‹</button>
             <span style={{ color:C.text, fontWeight:700, fontSize:'15px' }}>{MONTH_NAMES[ym.month]} {ym.year}</span>
@@ -146,7 +146,7 @@ function CalendarModal({ chapters, onClose }: { chapters: Chapter[]; onClose: ()
             ))}
           </div>
 
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:'3px' }}>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:'4px' }}>
             {Array.from({ length: firstDay }).map((_,i) => <div key={`e${i}`} />)}
             {Array.from({ length: daysInMonth }, (_,i) => i + 1).map(day => {
               const isSelected = day === selected
@@ -156,7 +156,7 @@ function CalendarModal({ chapters, onClose }: { chapters: Chapter[]; onClose: ()
                 <div
                   key={day}
                   onClick={() => setSelected(day === selected ? null : day)}
-                  style={{ padding:'6px 2px', borderRadius:'8px', cursor:'pointer', textAlign:'center', background:isSelected ? 'linear-gradient(135deg,#06b6d4,#14b8a6)' : 'transparent', boxShadow:isSelected ? '0 4px 12px rgba(6,182,212,0.4)' : undefined, transition:'all .2s', outline: isToday && !isSelected ? '1px solid rgba(6,182,212,0.5)' : undefined }}
+                  style={{ minHeight:'34px', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'6px 2px', borderRadius:'8px', cursor:'pointer', textAlign:'center', background:isSelected ? 'linear-gradient(135deg,#06b6d4,#14b8a6)' : 'transparent', boxShadow:isSelected ? '0 4px 12px rgba(6,182,212,0.4)' : undefined, transition:'all .2s', outline: isToday && !isSelected ? '1px solid rgba(6,182,212,0.5)' : undefined }}
                 >
                   <div style={{ fontSize:'12px', fontWeight:isSelected || isToday ? 700 : 400, color:isSelected ? '#fff' : isToday ? C.cyan : C.dim }}>{day}</div>
                   {cats.length > 0 && (
@@ -173,7 +173,7 @@ function CalendarModal({ chapters, onClose }: { chapters: Chapter[]; onClose: ()
         </div>
 
         {/* Right — schedule view */}
-        <div style={{ flex:1, background:'rgba(15,23,42,0.6)', padding:'24px', overflowY:'auto', maxHeight:'440px' }}>
+        <div style={{ background:'rgba(15,23,42,0.6)', padding:'24px', overflowY:'auto' }}>
           <div style={{ fontSize:'10px', fontWeight:700, color:C.cyan, textTransform:'uppercase', letterSpacing:'0.15em', marginBottom:'16px' }}>
             Schedule for {selected ? `${MONTH_NAMES[ym.month]} ${selected}` : 'Select a Day'}
           </div>
@@ -221,7 +221,7 @@ function EventCard({ chapter, onSelect }: { chapter: Chapter; onSelect: (id: str
       onClick={() => onSelect(chapter.id)}
       style={{
         background: C.surface,
-        borderRadius: '24px',
+        borderRadius: '28px',
         border: `1px solid ${hovered ? 'rgba(6,182,212,0.3)' : C.border}`,
         boxShadow: hovered ? '0 0 20px rgba(6,182,212,0.1)' : 'none',
         cursor: 'pointer',
@@ -229,13 +229,14 @@ function EventCard({ chapter, onSelect }: { chapter: Chapter; onSelect: (id: str
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
+        minHeight: '430px',
       }}
     >
       {/* Image / gradient area */}
-      <div style={{ height:'176px', position:'relative', overflow:'hidden', background:grad, flexShrink:0 }}>
+      <div style={{ height:'212px', position:'relative', overflow:'hidden', background:grad, flexShrink:0 }}>
         <div style={{ position:'absolute', inset:0, background:'rgba(2,6,23,0.5)' }} />
         <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', transform:hovered ? 'scale(1.05)' : 'scale(1)', transition:'transform .5s ease-out' }}>
-          <span style={{ fontSize:'56px', fontWeight:800, color:'rgba(255,255,255,0.12)', letterSpacing:'-0.05em' }}>CH{chapter.number}</span>
+          <span style={{ fontSize:'68px', fontWeight:800, color:'rgba(255,255,255,0.12)', letterSpacing:'-0.05em' }}>CH{chapter.number}</span>
         </div>
         {/* Category badge */}
         <div style={{ position:'absolute', top:'12px', left:'12px', background:cat.bg, color:cat.color, padding:'3px 10px', borderRadius:'999px', fontSize:'10px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', backdropFilter:'blur(8px)' }}>
@@ -248,12 +249,12 @@ function EventCard({ chapter, onSelect }: { chapter: Chapter; onSelect: (id: str
       </div>
 
       {/* Body */}
-      <div style={{ padding:'20px', display:'flex', flexDirection:'column', flex:1 }}>
-        <h3 style={{ fontSize:'17px', fontWeight:600, color:hovered ? C.cyan : C.text, marginBottom:'10px', transition:'color .3s ease-out', lineHeight:1.3 }}>
+      <div style={{ padding:'24px', display:'flex', flexDirection:'column', flex:1 }}>
+        <h3 style={{ fontSize:'19px', fontWeight:700, color:hovered ? C.cyan : C.text, marginBottom:'12px', transition:'color .3s ease-out', lineHeight:1.3 }}>
           Ch{chapter.number} — {chapter.name}
         </h3>
 
-        <div style={{ display:'flex', flexDirection:'column', gap:'4px', marginBottom:'16px' }}>
+        <div style={{ display:'flex', flexDirection:'column', gap:'6px', marginBottom:'20px' }}>
           <div style={{ display:'flex', alignItems:'center', gap:'6px', fontSize:'11px', fontWeight:600, color:C.muted }}>
             <span>🕐</span><span>{chapter.date_text}</span>
           </div>
@@ -263,12 +264,12 @@ function EventCard({ chapter, onSelect }: { chapter: Chapter; onSelect: (id: str
         </div>
 
         {/* Progress bar */}
-        <div style={{ marginBottom:'16px' }}>
+        <div style={{ marginBottom:'20px' }}>
           <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'5px' }}>
             <span style={{ fontSize:'10px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', color:C.muted }}>Progress</span>
             <span style={{ fontSize:'10px', fontWeight:700, color:C.cyan }}>{chapter.progress_percent}%</span>
           </div>
-          <div style={{ height:'4px', background:'rgba(255,255,255,0.06)', borderRadius:'4px', overflow:'hidden' }}>
+          <div style={{ height:'6px', background:'rgba(255,255,255,0.06)', borderRadius:'999px', overflow:'hidden' }}>
             <div style={{ height:'100%', borderRadius:'4px', background:'linear-gradient(90deg,#06b6d4,#14b8a6)', width:`${chapter.progress_percent}%`, transition:'width .5s ease-out' }} />
           </div>
         </div>
@@ -316,23 +317,23 @@ function BentoSection({ kpis, risks, chapters, onSwitch }: { kpis: Kpi[]; risks:
   ]
 
   return (
-    <div style={{ display:'grid', gridTemplateColumns:'3fr 1fr', gap:'20px', marginTop:'32px' }}>
+    <div style={{ display:'grid', gridTemplateColumns:'2.2fr 1fr', gap:'26px', marginTop:'40px', alignItems:'stretch' }}>
 
       {/* Skill corner — 3/4 */}
-      <div style={{ background:C.surface, borderRadius:'24px', padding:'28px', border:`1px solid ${C.border}` }}>
-        <div style={{ marginBottom:'22px' }}>
+      <div style={{ background:C.surface, borderRadius:'28px', padding:'34px', border:`1px solid ${C.border}` }}>
+        <div style={{ marginBottom:'26px' }}>
           <div style={{ fontSize:'10px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.15em', color:C.muted, marginBottom:'6px' }}>Program KPIs</div>
-          <h3 style={{ fontSize:'20px', fontWeight:800, color:C.text }}>Build Beyond DEVCON <span style={{ color:C.cyan }}>× Sui</span></h3>
+          <h3 style={{ fontSize:'24px', fontWeight:800, color:C.text }}>Build Beyond DEVCON <span style={{ color:C.cyan }}>× Sui</span></h3>
         </div>
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'16px' }}>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'18px' }}>
           {skillItems.map(item => (
-            <div key={item.label} style={{ background:C.bg, borderRadius:'16px', padding:'20px', border:`1px solid ${C.border}`, display:'flex', alignItems:'flex-start', gap:'16px' }}>
-              <div style={{ width:'48px', height:'48px', borderRadius:'12px', flexShrink:0, background:`linear-gradient(135deg,${item.color}33,${item.color}11)`, border:`1px solid ${item.color}44`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'22px' }}>
+            <div key={item.label} style={{ background:C.bg, borderRadius:'18px', padding:'24px', border:`1px solid ${C.border}`, display:'flex', alignItems:'flex-start', gap:'18px', minHeight:'126px' }}>
+              <div style={{ width:'56px', height:'56px', borderRadius:'14px', flexShrink:0, background:`linear-gradient(135deg,${item.color}33,${item.color}11)`, border:`1px solid ${item.color}44`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'24px' }}>
                 {item.icon}
               </div>
               <div>
-                <div style={{ fontSize:'28px', fontWeight:800, color:item.color, lineHeight:1 }}>{item.value}</div>
-                <div style={{ fontSize:'10px', fontWeight:700, color:C.muted, textTransform:'uppercase', letterSpacing:'0.08em', marginTop:'5px' }}>{item.label}</div>
+                <div style={{ fontSize:'34px', fontWeight:800, color:item.color, lineHeight:1 }}>{item.value}</div>
+                <div style={{ fontSize:'10px', fontWeight:700, color:C.muted, textTransform:'uppercase', letterSpacing:'0.08em', marginTop:'8px' }}>{item.label}</div>
               </div>
             </div>
           ))}
@@ -340,10 +341,10 @@ function BentoSection({ kpis, risks, chapters, onSwitch }: { kpis: Kpi[]; risks:
       </div>
 
       {/* Right column */}
-      <div style={{ display:'flex', flexDirection:'column', gap:'16px' }}>
+      <div style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
 
         {/* Status panel */}
-        <div style={{ background:C.surface, borderRadius:'24px', padding:'24px', border:`1px solid ${C.border}`, flex:1 }}>
+        <div style={{ background:C.surface, borderRadius:'28px', padding:'26px', border:`1px solid ${C.border}`, flex:1 }}>
           <div style={{ fontSize:'10px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.15em', color:C.muted, marginBottom:'16px' }}>Quick Stats</div>
           {statItems.map((item, i) => (
             <div key={item.label} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'10px 0', borderBottom:i < statItems.length - 1 ? `1px solid ${C.border}` : undefined }}>
@@ -354,7 +355,7 @@ function BentoSection({ kpis, risks, chapters, onSwitch }: { kpis: Kpi[]; risks:
         </div>
 
         {/* Anonymous / CTA widget */}
-        <div style={{ background:'linear-gradient(135deg,#0f172a 0%,#020617 100%)', borderRadius:'24px', padding:'24px', border:`1px solid ${C.border}`, position:'relative', overflow:'hidden' }}>
+        <div style={{ background:'linear-gradient(135deg,#0f172a 0%,#020617 100%)', borderRadius:'28px', padding:'26px', border:`1px solid ${C.border}`, position:'relative', overflow:'hidden' }}>
           <div style={{ position:'absolute', right:'-8px', bottom:'-8px', fontSize:'80px', opacity:0.08, pointerEvents:'none', lineHeight:1 }}>👻</div>
           <div style={{ fontSize:'10px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.15em', color:C.muted, marginBottom:'6px' }}>Q2 Report</div>
           <div style={{ fontSize:'15px', fontWeight:700, color:C.text, marginBottom:'3px' }}>June 30, 2026</div>
@@ -526,8 +527,8 @@ export default function Dashboard({ initialChapterId }: DashboardProps) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
-  const [activeTab,    setActiveTab]    = useState<TabId>(() => getTabFromQuery(searchParams.get('tab')))
   const [calendarOpen, setCalendarOpen] = useState(false)
+  const activeTab = getTabFromQuery(searchParams.get('tab'))
 
   const [chapters,   setChapters]   = useState<Chapter[]>([])
   const [kpis,       setKpis]       = useState<Kpi[]>([])
@@ -548,11 +549,6 @@ export default function Dashboard({ initialChapterId }: DashboardProps) {
 
   useEffect(() => { refresh() }, [refresh])
 
-  useEffect(() => {
-    if (initialChapterId) return
-    setActiveTab(getTabFromQuery(searchParams.get('tab')))
-  }, [initialChapterId, searchParams])
-
   const updateTabUrl = useCallback((tab: TabId) => {
     const params = new URLSearchParams(searchParams.toString())
     if (tab === 'overview') params.delete('tab')
@@ -572,7 +568,6 @@ export default function Dashboard({ initialChapterId }: DashboardProps) {
       router.push(tab === 'overview' ? '/' : `/?tab=${tab}`)
       return
     }
-    setActiveTab(tab)
     updateTabUrl(tab)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -595,7 +590,7 @@ export default function Dashboard({ initialChapterId }: DashboardProps) {
 
         <TopHeader calendarOpen={calendarOpen} onToggleCalendar={() => setCalendarOpen(v => !v)} />
 
-        <main style={{ flex:1, padding:'32px', overflowX:'hidden' }}>
+        <main style={{ flex:1, padding:'46px 48px 54px', overflowX:'hidden' }}>
           {initialChapterId ? (
             chapters.length === 0 ? (
               <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'400px', color:'#475569', fontSize:'13px' }}>
@@ -613,31 +608,31 @@ export default function Dashboard({ initialChapterId }: DashboardProps) {
           ) : activeTab === 'overview' ? (
             <>
               {/* Hero section header */}
-              <div style={{ marginBottom:'28px' }}>
+              <div style={{ marginBottom:'34px', maxWidth:'980px' }}>
                 <div style={{ fontSize:'10px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.15em', color:C.muted, marginBottom:'8px' }}>Event Discovery</div>
-                <h1 style={{ fontSize:'30px', fontWeight:800, color:C.text, marginBottom:'6px' }}>
+                <h1 style={{ fontSize:'40px', fontWeight:800, color:C.text, marginBottom:'10px', lineHeight:1.1 }}>
                   Build Beyond DEVCON <span style={{ color:C.cyan }}>× Sui</span>
                 </h1>
-                <p style={{ fontSize:'14px', color:C.dim }}>6 chapters across the Philippines · Q2 2026</p>
+                <p style={{ fontSize:'16px', color:C.dim, lineHeight:1.7 }}>6 chapters across the Philippines · Q2 2026</p>
               </div>
 
               {/* Bento widgets — stats first */}
               <BentoSection kpis={kpis} risks={risks} chapters={chapters} onSwitch={switchTab} />
 
               {/* 3-column event grid */}
-              <div style={{ marginTop:'40px' }}>
-                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'20px' }}>
+              <div style={{ marginTop:'54px' }}>
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'24px' }}>
                   <div>
                     <div style={{ fontSize:'10px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.15em', color:C.muted, marginBottom:'4px' }}>All Chapters</div>
-                    <h2 style={{ fontSize:'20px', fontWeight:800, color:C.text }}>Event Directory</h2>
+                    <h2 style={{ fontSize:'28px', fontWeight:800, color:C.text }}>Event Directory</h2>
                   </div>
                   <div style={{ fontSize:'12px', color:C.muted }}>{chapters.length} events · Q2 2026</div>
                 </div>
-                <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'20px' }}>
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(320px,1fr))', gap:'24px' }}>
                   {chapters.length > 0
                     ? chapters.map(c => <EventCard key={c.id} chapter={c} onSelect={showChapter} />)
                     : Array.from({ length: 6 }).map((_,i) => (
-                        <div key={i} style={{ height:'340px', background:C.surface, borderRadius:'24px', border:`1px solid ${C.border}`, animation:'pulse 1.5s infinite', opacity:0.5 }} />
+                        <div key={i} style={{ height:'430px', background:C.surface, borderRadius:'28px', border:`1px solid ${C.border}`, animation:'pulse 1.5s infinite', opacity:0.5 }} />
                       ))
                   }
                 </div>

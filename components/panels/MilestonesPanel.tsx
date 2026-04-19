@@ -47,10 +47,10 @@ const TH: React.CSSProperties = {
 
 export default function MilestonesPanel() {
   return (
-    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '34px' }}>
 
       {/* Info banner */}
-      <div style={{ background: 'rgba(6,182,212,0.06)', border: '1px solid rgba(6,182,212,0.18)', borderRadius: '14px', padding: '14px 18px', fontSize: '13px', color: '#8899aa', lineHeight: 1.7 }}>
+      <div style={{ background: 'rgba(6,182,212,0.06)', border: '1px solid rgba(6,182,212,0.18)', borderRadius: '18px', padding: '18px 22px', fontSize: '14px', color: '#8899aa', lineHeight: 1.8 }}>
         <strong style={{ color: '#06b6d4' }}>Partnership KPI Timeline</strong> — Dec '25 (Q4) → Nov '26 (Q4). Currently in{' '}
         <strong style={{ color: '#f59e0b' }}>April '26 (Q2)</strong>.
       </div>
@@ -70,7 +70,7 @@ export default function MilestonesPanel() {
       </div>
 
       {/* Calendar / timeline table */}
-      <div style={{ overflowX: 'auto', borderRadius: '16px', border: '1px solid #1e293b' }}>
+      <div style={{ overflowX: 'auto', borderRadius: '20px', border: '1px solid #1e293b' }}>
         <table style={{ borderCollapse: 'collapse', minWidth: 920, width: '100%', fontSize: '11px' }}>
           <thead>
             <tr>
@@ -128,10 +128,10 @@ export default function MilestonesPanel() {
       </div>
 
       {/* Q1 Completed + Q2 Active */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: '20px' }}>
 
         {/* Q1 */}
-        <div style={{ background: '#0f172a', borderRadius: '16px', padding: '22px', border: '1px solid #1e293b' }}>
+        <div style={{ background: '#0f172a', borderRadius: '20px', padding: '28px', border: '1px solid #1e293b' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
             <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#14b8a6' }} />
             <span style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#14b8a6' }}>Q1 Completed</span>
@@ -147,7 +147,7 @@ export default function MilestonesPanel() {
         </div>
 
         {/* Q2 */}
-        <div style={{ background: '#0f172a', borderRadius: '16px', padding: '22px', border: '1px solid rgba(245,158,11,0.25)' }}>
+        <div style={{ background: '#0f172a', borderRadius: '20px', padding: '28px', border: '1px solid rgba(245,158,11,0.25)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
             <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#f59e0b', animation: 'pulse 2s infinite' }} />
             <span style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#f59e0b' }}>Q2 Active — Now</span>

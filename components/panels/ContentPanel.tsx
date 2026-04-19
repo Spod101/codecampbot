@@ -15,14 +15,14 @@ const steps = [
 
 const CARD: React.CSSProperties = {
   display: 'grid', gridTemplateColumns: '32px 1fr', gap: '14px',
-  alignItems: 'center', padding: '14px 18px',
-  background: '#0f172a', border: '1px solid #1e293b', borderRadius: '14px',
+  alignItems: 'center', padding: '18px 22px',
+  background: '#0f172a', border: '1px solid #1e293b', borderRadius: '18px',
   transition: 'border-color .2s',
 }
 
 export default function ContentPanel() {
   return (
-    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '42px' }}>
       <PanelHeader
         eyebrow="Content"
         title="Content Hub"
@@ -30,7 +30,7 @@ export default function ContentPanel() {
       />
 
       {/* Alert */}
-      <div style={{ display: 'flex', gap: '10px', padding: '12px 16px', background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: '12px', fontSize: '12px', color: '#8899aa' }}>
+      <div style={{ display: 'flex', gap: '10px', padding: '18px 22px', background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: '16px', fontSize: '13px', color: '#8899aa', lineHeight: 1.7 }}>
         <span style={{ color: '#f59e0b', flexShrink: 0 }}>⚠</span>
         <span>
           <strong style={{ color: '#f59e0b' }}>Content update in progress.</strong> Mike and Lady are revising all materials based on Letran pilot learnings.
@@ -42,7 +42,7 @@ export default function ContentPanel() {
       {/* 10-step program */}
       <div>
         <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#64748b', marginBottom: '14px' }}>10-Step Code Camp Program</p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {steps.map((step, i) => (
             <div key={i} style={CARD}
               onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(6,182,212,0.35)')}
@@ -59,7 +59,7 @@ export default function ContentPanel() {
       {/* Troubleshooting */}
       <div>
         <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#64748b', marginBottom: '14px' }}>Troubleshooting — 403 Forbidden on Sui Install</p>
-        <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '14px', padding: '20px' }}>
+        <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '18px', padding: '26px' }}>
           <pre style={{ fontSize: '11px', color: '#14b8a6', lineHeight: 1.7, overflowX: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-all', margin: 0 }}>{`wget https://github.com/MystenLabs/sui/releases/download/testnet-v1.44.2/sui-testnet-v1.44.2-ubuntu-x86_64.tgz
 tar -xvf sui-testnet-v1.44.2-ubuntu-x86_64.tgz
 chmod +x sui
@@ -75,9 +75,9 @@ sui --version`}</pre>
       {/* Templates */}
       <div>
         <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#64748b', marginBottom: '14px' }}>Report Templates</p>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: '18px' }}>
           {/* Post-event SITREP */}
-          <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '14px', padding: '18px' }}>
+          <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '18px', padding: '24px' }}>
             <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: '#06b6d4', marginBottom: '12px' }}>Post-Event SITREP</p>
             <pre style={{ fontSize: '10px', color: '#64748b', lineHeight: 1.8, whiteSpace: 'pre-wrap', margin: 0 }}>{`EVENT SITREP — [Chapter Name]
 Date:         [event date]
@@ -90,7 +90,7 @@ Liquidation:  [submitted / pending by date]
 Issues:       [list or NONE]`}</pre>
           </div>
           {/* Ocular report */}
-          <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '14px', padding: '18px' }}>
+          <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '18px', padding: '24px' }}>
             <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: '#14b8a6', marginBottom: '12px' }}>Ocular Report</p>
             <pre style={{ fontSize: '10px', color: '#64748b', lineHeight: 1.8, whiteSpace: 'pre-wrap', margin: 0 }}>{`OCULAR REPORT — [Chapter Name]
 Date:         [date] · Lead: [name]

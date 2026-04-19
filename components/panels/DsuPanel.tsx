@@ -41,12 +41,12 @@ export default function DsuPanel({ chapters, kpis, onShowChapter }: Props) {
   const chaptersWithTodos = chapters.filter(c => c.todos.length > 0)
 
   return (
-    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
 
       {/* DSU Header */}
-      <div className="bg-[#0f172a] border border-[#1e293b] rounded-2xl overflow-hidden">
+      <div className="bg-[#0f172a] border border-[#1e293b] rounded-3xl overflow-hidden">
         <div className="h-0.5 bg-gradient-to-r from-[#06b6d4] via-[#14b8a6] to-[#06b6d4]" />
-        <div className="flex items-start justify-between flex-wrap gap-3 p-5">
+        <div className="flex items-start justify-between flex-wrap gap-4 p-8">
           <div>
             <div className="text-[9px] text-[#06b6d4] tracking-[0.15em] uppercase mb-1.5 font-bold">📝 DEVCON Ops — Monday Morning DSU</div>
             <div className="text-[20px] font-extrabold text-[#cfd5dd]">Monday, April 13, 2026</div>
@@ -61,7 +61,7 @@ export default function DsuPanel({ chapters, kpis, onShowChapter }: Props) {
       {/* KPI Grid */}
       <div>
         <SectionTitle>📊 KPI Summary</SectionTitle>
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(130px,1fr))] gap-3">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-4">
           {kpis.map(k => (
             <KpiTile key={k.id} value={k.value} label={k.label} sublabel={k.sublabel} color={k.color} />
           ))}
@@ -71,10 +71,10 @@ export default function DsuPanel({ chapters, kpis, onShowChapter }: Props) {
       {/* Program Progress */}
       <div>
         <SectionTitle>🏕 Program Progress</SectionTitle>
-        <div className="grid grid-cols-2 gap-4 max-[640px]:grid-cols-1">
+        <div className="grid grid-cols-2 gap-6 max-[640px]:grid-cols-1">
 
           {/* Code Camps */}
-          <div className="bg-[#0f172a] border border-[rgba(6,182,212,0.25)] rounded-2xl p-5 relative overflow-hidden">
+          <div className="bg-[#0f172a] border border-[rgba(6,182,212,0.25)] rounded-3xl p-7 relative overflow-hidden">
             <div className="absolute top-0 left-0 bottom-0 w-[3px] rounded-l-2xl bg-[#06b6d4]" />
             <div className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#06b6d4] mb-3">🏕 Sui Code Camps</div>
             <div className="flex items-baseline gap-1.5 mb-3">
@@ -99,7 +99,7 @@ export default function DsuPanel({ chapters, kpis, onShowChapter }: Props) {
           </div>
 
           {/* Dev Events */}
-          <div className="bg-[#0f172a] border border-[rgba(245,158,11,0.25)] rounded-2xl p-5 relative overflow-hidden">
+          <div className="bg-[#0f172a] border border-[rgba(245,158,11,0.25)] rounded-3xl p-7 relative overflow-hidden">
             <div className="absolute top-0 left-0 bottom-0 w-[3px] rounded-l-2xl bg-[#f59e0b]" />
             <div className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#f59e0b] mb-3">⚡ Sui Developer Events</div>
             <div className="flex items-baseline gap-1.5 mb-3">
@@ -122,12 +122,12 @@ export default function DsuPanel({ chapters, kpis, onShowChapter }: Props) {
       {/* Camp Schedule */}
       <div>
         <SectionTitle>📅 Camp Schedule & Countdown</SectionTitle>
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-6">
           {upcomingChapters.map(chapter => {
             const b = statusBadge[chapter.status]
             const accentColor = chapter.color === 'teal' ? '#14b8a6' : chapter.color === 'yellow' ? '#f59e0b' : chapter.color === 'purple' ? '#a78bfa' : '#06b6d4'
             return (
-              <div key={chapter.id} className="bg-[#0f172a] border border-[#1e293b] rounded-2xl p-5" style={{ borderLeft: `3px solid ${accentColor}` }}>
+              <div key={chapter.id} className="bg-[#0f172a] border border-[#1e293b] rounded-3xl p-6" style={{ borderLeft: `3px solid ${accentColor}` }}>
                 <div className="flex justify-between items-start gap-2 mb-2">
                   <div>
                     <div className="text-[13px] font-extrabold text-[#cfd5dd]">{chapter.city}</div>
@@ -155,13 +155,13 @@ export default function DsuPanel({ chapters, kpis, onShowChapter }: Props) {
       {/* High Risks */}
       <div>
         <SectionTitle>⚠️ High Risks & Blockers</SectionTitle>
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-4">
           {[
             { icon: '🔴', title: 'Tacloban Rescheduling', color: '#e11d48', border: 'rgba(225,29,72,0.25)', bg: 'rgba(225,29,72,0.06)', body: 'Date still TBC. Rolf to confirm by end of week. Must lock before May 1 to stay within Q2 window.', owner: 'OWNER: Rolf · DEADLINE: End of this week' },
             { icon: '🟣', title: 'Laguna — No Confirmed Slot', color: '#a78bfa', border: 'rgba(167,139,250,0.25)', bg: 'rgba(167,139,250,0.06)', body: 'Lead assigned: John Danmel. Awaiting June go/no-go from Dom. Risk of cancellation.', owner: 'OWNER: Dom / John Danmel · ACTION: Confirm slot or cancel' },
             { icon: '🟡', title: 'Ocular Readiness — Bukidnon & Iloilo', color: '#f59e0b', border: 'rgba(245,158,11,0.25)', bg: 'rgba(245,158,11,0.06)', body: 'Both chapters in T-30 window. Ocular reports due immediately. Delay in ocular = delay in installation.', owner: 'OWNER: Zhi (BSU) · Ted / Marica (CPU + WVSU) · Schedule this week' },
           ].map(r => (
-            <div key={r.title} className="flex gap-4 items-start p-4 rounded-2xl" style={{ background: r.bg, border: `1px solid ${r.border}` }}>
+            <div key={r.title} className="flex gap-4 items-start p-6 rounded-3xl" style={{ background: r.bg, border: `1px solid ${r.border}` }}>
               <span className="text-[18px] leading-snug flex-shrink-0 mt-0.5">{r.icon}</span>
               <div>
                 <div className="text-[13px] font-bold mb-1" style={{ color: r.color }}>{r.title}</div>
@@ -176,7 +176,7 @@ export default function DsuPanel({ chapters, kpis, onShowChapter }: Props) {
       {/* To-Do Per Camp */}
       <div>
         <SectionTitle>✅ To-Do List Per Camp</SectionTitle>
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-6">
           {chaptersWithTodos.map(chapter => {
             const accentColor = chapter.color === 'teal' ? '#14b8a6' : chapter.color === 'yellow' ? '#f59e0b' : chapter.color === 'purple' ? '#a78bfa' : '#06b6d4'
             return (
@@ -202,7 +202,7 @@ export default function DsuPanel({ chapters, kpis, onShowChapter }: Props) {
       </div>
 
       {/* Quick Chapter Nav */}
-      <div className="p-5 bg-[#0f172a] border border-[#1e293b] rounded-2xl">
+      <div className="p-7 bg-[#0f172a] border border-[#1e293b] rounded-3xl">
         <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#64748b] mb-3">Jump to Chapter</div>
         <div className="flex gap-2 flex-wrap">
           {chapters.map(c => {

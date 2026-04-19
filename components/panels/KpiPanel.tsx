@@ -20,8 +20,8 @@ const accentOf = (c: Chapter) =>
 
 const CARD: React.CSSProperties = {
   display: 'grid', gridTemplateColumns: '28px 1fr auto auto', gap: '14px',
-  alignItems: 'center', padding: '16px 18px',
-  background: '#0f172a', border: '1px solid #1e293b', borderRadius: '14px',
+  alignItems: 'center', padding: '20px 22px',
+  background: '#0f172a', border: '1px solid #1e293b', borderRadius: '18px',
   transition: 'border-color .2s',
 }
 
@@ -40,24 +40,24 @@ export default function KpiPanel({ kpis, chapters, setKpis }: { kpis: Kpi[]; cha
   const atRisk  = chapters.filter(c => ['rescheduling','tbc'].includes(c.status)).length
 
   return (
-    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
       <PanelHeader eyebrow="Q2 2026" title="KPI Dashboard" subtitle="Key performance indicators and chapter schedule." />
 
       {/* KPI metric tiles */}
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(130px,1fr))] gap-3">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-4">
         {kpis.map(k => (
           <KpiTile key={k.id} id={k.id} value={k.value} label={k.label} sublabel={k.sublabel} color={k.color} onSave={saveKpi} />
         ))}
       </div>
 
       {/* Pax tracker */}
-      <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '18px', padding: '28px' }}>
+      <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '22px', padding: '34px' }}>
         <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#64748b', marginBottom: '16px' }}>
           National Pax — MOU Target: 500
         </p>
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: '20px', marginBottom: '24px' }}>
           <div>
-            <span style={{ fontSize: '52px', fontWeight: 800, color: '#06b6d4', lineHeight: 1 }}>0</span>
+            <span style={{ fontSize: '60px', fontWeight: 800, color: '#06b6d4', lineHeight: 1 }}>0</span>
             <span style={{ fontSize: '22px', fontWeight: 600, color: '#1e293b', marginLeft: '6px' }}>/ 600</span>
           </div>
           <div style={{ display: 'flex', gap: '28px' }}>
@@ -74,7 +74,7 @@ export default function KpiPanel({ kpis, chapters, setKpis }: { kpis: Kpi[]; cha
             ))}
           </div>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {[
             { label: 'MOU Minimum', target: 500, color: '#06b6d4' },
             { label: 'Full Target',  target: 600, color: '#14b8a6' },
@@ -83,7 +83,7 @@ export default function KpiPanel({ kpis, chapters, setKpis }: { kpis: Kpi[]; cha
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                 <span>{bar.label}</span><span style={{ color: bar.color, fontWeight: 700 }}>0 / {bar.target}</span>
               </div>
-              <div style={{ height: '5px', background: '#1e293b', borderRadius: '4px' }}>
+              <div style={{ height: '7px', background: '#1e293b', borderRadius: '999px' }}>
                 <div style={{ height: '100%', borderRadius: '4px', background: `linear-gradient(90deg, ${bar.color}, ${bar.color}88)`, width: '0%' }} />
               </div>
             </div>
@@ -98,7 +98,7 @@ export default function KpiPanel({ kpis, chapters, setKpis }: { kpis: Kpi[]; cha
       {/* Chapter schedule — card rows */}
       <div>
         <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#64748b', marginBottom: '14px' }}>Chapter Schedule</p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {chapters.map(c => {
             const b      = statusBadge[c.status]
             const accent = accentOf(c)

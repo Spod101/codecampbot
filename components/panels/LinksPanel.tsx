@@ -14,8 +14,8 @@ const chapterAccent = (c: Chapter) =>
 
 const CARD: React.CSSProperties = {
   display: 'grid', gridTemplateColumns: '40px 1fr auto auto', gap: '14px',
-  alignItems: 'center', padding: '14px 18px',
-  background: '#0f172a', border: '1px solid #1e293b', borderRadius: '14px',
+  alignItems: 'center', padding: '18px 22px',
+  background: '#0f172a', border: '1px solid #1e293b', borderRadius: '18px',
   transition: 'border-color .2s',
 }
 
@@ -25,7 +25,7 @@ export default function LinksPanel({ links, chapters, contacts, onShowChapter }:
   const keyContacts = contacts.filter(c => c.team === 'sui_foundation')
 
   return (
-    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '42px' }}>
       <PanelHeader
         eyebrow="Resources"
         title="Resource Links"
@@ -35,12 +35,12 @@ export default function LinksPanel({ links, chapters, contacts, onShowChapter }:
       {/* Chapter quick nav */}
       <div>
         <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#64748b', marginBottom: '14px' }}>Chapter Pages</p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(220px,1fr))', gap: '8px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: '12px' }}>
           {chapters.map(c => {
             const accent = chapterAccent(c)
             return (
               <button key={c.id} onClick={() => onShowChapter(c.id)}
-                style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '14px', cursor: 'pointer', transition: 'all .2s', textAlign: 'left' }}
+                style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px 20px', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '18px', cursor: 'pointer', transition: 'all .2s', textAlign: 'left' }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(6,182,212,0.35)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = '#1e293b'; e.currentTarget.style.transform = 'translateY(0)' }}
               >
@@ -61,7 +61,7 @@ export default function LinksPanel({ links, chapters, contacts, onShowChapter }:
       {/* Drive resources */}
       <div>
         <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#64748b', marginBottom: '14px' }}>Drive &amp; Operations Resources</p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {links.map(link => {
             const a = iconAccent(link.icon_color)
             return (
@@ -89,10 +89,10 @@ export default function LinksPanel({ links, chapters, contacts, onShowChapter }:
       {keyContacts.length > 0 && (
         <div>
           <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#64748b', marginBottom: '14px' }}>Sui Foundation Contacts</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {keyContacts.map(c => (
               <div key={c.id}
-                style={{ display: 'grid', gridTemplateColumns: '40px 1fr auto', gap: '14px', alignItems: 'center', padding: '14px 18px', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '14px', transition: 'border-color .2s' }}
+                style={{ display: 'grid', gridTemplateColumns: '40px 1fr auto', gap: '14px', alignItems: 'center', padding: '18px 22px', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '18px', transition: 'border-color .2s' }}
                 onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(6,182,212,0.35)')}
                 onMouseLeave={e => (e.currentTarget.style.borderColor = '#1e293b')}>
                 <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(6,182,212,0.1)', border: '1px solid rgba(6,182,212,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
