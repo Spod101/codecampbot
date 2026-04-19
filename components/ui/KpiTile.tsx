@@ -44,42 +44,93 @@ export default function KpiTile({
 
   return (
     <div
-      className="bg-[#0f172a] rounded-2xl p-4 text-center"
-      style={{ border: `1px solid ${c.border}`, background: `linear-gradient(135deg, ${c.bg}, transparent)`, position: 'relative', cursor: onSave ? 'pointer' : 'default' }}
+      className="rounded-[22px] px-5 py-4 text-center"
+      style={{
+        border: `1px solid ${c.border}`,
+        background: `radial-gradient(120% 90% at 50% -10%, ${c.bg}, transparent 65%), linear-gradient(160deg, rgba(2,6,23,0.96), rgba(15,23,42,0.86))`,
+        position: 'relative',
+        cursor: onSave ? 'pointer' : 'default',
+        minHeight: '118px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        boxShadow: hovered ? `0 14px 30px -22px ${c.num}99, inset 0 1px 0 rgba(255,255,255,0.06)` : `0 10px 24px -24px ${c.num}80, inset 0 1px 0 rgba(255,255,255,0.05)`,
+        transition: 'transform .18s ease, box-shadow .18s ease, border-color .18s ease',
+        transform: hovered && !editing ? 'translateY(-2px)' : 'translateY(0)',
+      }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onClick={() => { if (onSave && !editing) setEditing(true) }}
     >
-      {/* edit pencil hint */}
+      <div
+        style={{
+          position: 'absolute',
+          left: 14,
+          right: 14,
+          top: 10,
+          height: 1,
+          borderRadius: 999,
+          background: `linear-gradient(90deg, transparent, ${c.num}90, transparent)`,
+          opacity: hovered ? 0.9 : 0.45,
+          pointerEvents: 'none',
+        }}
+      />
+
       {onSave && hovered && !editing && (
-        <span style={{ position: 'absolute', top: '6px', right: '8px', fontSize: '10px', color: c.num, opacity: 0.6 }}>✎</span>
-      )}
-
-      {editing ? (
-        <input
-          ref={inputRef}
-          value={draft}
-          onChange={e => setDraft(e.target.value)}
-          onKeyDown={onKeyDown}
-          onBlur={save}
+        <span
           style={{
-            width: '100%', textAlign: 'center', background: 'transparent',
-            border: 'none', borderBottom: `2px solid ${c.num}`,
-            color: c.num, fontSize: 26, fontWeight: 800, lineHeight: 1,
-            marginBottom: '6px', outline: 'none', fontFamily: 'inherit',
+            position: 'absolute',
+            top: '10px',
+            right: '12px',
+            fontSize: '9px',
+            color: c.num,
+            opacity: 0.78,
+            border: `1px solid ${c.border}`,
+            borderRadius: '999px',
+            padding: '2px 7px',
+            letterSpacing: '0.08em',
+            fontWeight: 700,
           }}
-          disabled={saving}
-        />
-      ) : (
-        <div className="font-extrabold leading-none mb-1.5" style={{ fontSize: 26, color: c.num }}>
-          {value}
-        </div>
+        >
+          EDIT
+        </span>
       )}
 
-      <div className="text-[10px] font-bold uppercase tracking-[0.08em]" style={{ color: c.num }}>
-        {label}
+      <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+        {editing ? (
+          <input
+            ref={inputRef}
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            onKeyDown={onKeyDown}
+            onBlur={save}
+            style={{
+              width: '100%', textAlign: 'center', background: 'transparent',
+              border: 'none', borderBottom: `2px solid ${c.num}`,
+              color: c.num, fontSize: 34, fontWeight: 800, lineHeight: 1,
+              marginBottom: '2px', outline: 'none', fontFamily: 'inherit',
+            }}
+            disabled={saving}
+          />
+        ) : (
+          <div
+            className="font-extrabold leading-none"
+            style={{
+              fontSize: 38,
+              color: c.num,
+              letterSpacing: '-0.04em',
+              textShadow: `0 0 18px ${c.num}2e`,
+            }}
+          >
+            {value}
+          </div>
+        )}
+
+        <div className="text-[13px] font-extrabold uppercase tracking-widest" style={{ color: c.num, lineHeight: 1.05 }}>
+          {label}
+        </div>
+        {sublabel && <div className="text-[10px] text-[#7f8da4]" style={{ lineHeight: 1.2 }}>{sublabel}</div>}
       </div>
-      {sublabel && <div className="text-[9px] text-[#64748b] mt-1">{sublabel}</div>}
     </div>
   )
 }
