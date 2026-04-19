@@ -30,7 +30,7 @@ export default function ContentPanel() {
       />
 
       {/* Alert */}
-      <div style={{ display: 'flex', gap: '10px', padding: '12px 16px', background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: '12px', fontSize: '12px', color: '#94a3b8' }}>
+      <div style={{ display: 'flex', gap: '10px', padding: '12px 16px', background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: '12px', fontSize: '12px', color: '#8899aa' }}>
         <span style={{ color: '#f59e0b', flexShrink: 0 }}>⚠</span>
         <span>
           <strong style={{ color: '#f59e0b' }}>Content update in progress.</strong> Mike and Lady are revising all materials based on Letran pilot learnings.
@@ -50,7 +50,7 @@ export default function ContentPanel() {
               <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(6,182,212,0.1)', border: '1px solid rgba(6,182,212,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 800, color: '#06b6d4', flexShrink: 0 }}>
                 {i + 1}
               </div>
-              <span style={{ fontSize: '13px', fontWeight: 600, color: '#f8fafc' }}>{step}</span>
+              <span style={{ fontSize: '13px', fontWeight: 600, color: '#cfd5dd' }}>{step}</span>
             </div>
           ))}
         </div>
@@ -65,7 +65,7 @@ tar -xvf sui-testnet-v1.44.2-ubuntu-x86_64.tgz
 chmod +x sui
 sudo mv sui /usr/local/bin/
 sui --version`}</pre>
-          <div style={{ marginTop: '14px', display: 'flex', gap: '8px', padding: '10px 14px', background: 'rgba(20,184,166,0.06)', border: '1px solid rgba(20,184,166,0.18)', borderRadius: '10px', fontSize: '11px', color: '#94a3b8' }}>
+          <div style={{ marginTop: '14px', display: 'flex', gap: '8px', padding: '10px 14px', background: 'rgba(20,184,166,0.06)', border: '1px solid rgba(20,184,166,0.18)', borderRadius: '10px', fontSize: '11px', color: '#8899aa' }}>
             <span style={{ color: '#14b8a6', flexShrink: 0 }}>💡</span>
             <span><strong style={{ color: '#14b8a6' }}>Offline install:</strong> Use USB thumb drives with zipped Sui binaries for restricted WiFi labs.</span>
           </div>

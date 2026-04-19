@@ -78,7 +78,7 @@ export default function KpiPanel({ kpis, chapters }: { kpis: Kpi[]; chapters: Ch
             </div>
           ))}
         </div>
-        <div style={{ marginTop: '16px', display: 'flex', gap: '8px', padding: '10px 14px', background: 'rgba(225,29,72,0.06)', border: '1px solid rgba(225,29,72,0.18)', borderRadius: '10px', fontSize: '11px', color: '#94a3b8' }}>
+        <div style={{ marginTop: '16px', display: 'flex', gap: '8px', padding: '10px 14px', background: 'rgba(225,29,72,0.06)', border: '1px solid rgba(225,29,72,0.18)', borderRadius: '10px', fontSize: '11px', color: '#8899aa' }}>
           <span style={{ color: '#e11d48', flexShrink: 0 }}>⚠</span>
           <span><strong style={{ color: '#e11d48' }}>Action:</strong> Log Manila actual pax count. All chapters report within T+3 days of event.</span>
         </div>
@@ -98,7 +98,7 @@ export default function KpiPanel({ kpis, chapters }: { kpis: Kpi[]; chapters: Ch
                 onMouseLeave={e => (e.currentTarget.style.borderColor = '#1e293b')}>
                 <span style={{ fontSize: '10px', fontWeight: 700, color: '#475569', fontFamily: 'monospace' }}>{c.number}</span>
                 <div>
-                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#f8fafc', marginBottom: '2px' }}>{c.name}</div>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#cfd5dd', marginBottom: '2px' }}>{c.name}</div>
                   <div style={{ fontSize: '11px', color: '#64748b' }}>{c.venue.split(',')[0]} · {c.lead_name.split('&')[0].trim()}</div>
                 </div>
                 <div style={{ textAlign: 'right' }}>

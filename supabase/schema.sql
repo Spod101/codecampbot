@@ -116,8 +116,18 @@ create table if not exists resource_links (
 );
 
 -- ────────────────────────────────────────────────────────────
+-- BOT SETTINGS  (key-value config store)
+-- ────────────────────────────────────────────────────────────
+create table if not exists bot_settings (
+  key        text primary key,
+  value      text not null,
+  updated_at timestamptz default now()
+);
+
+-- ────────────────────────────────────────────────────────────
 -- ROW LEVEL SECURITY (public read, authenticated write)
 -- ────────────────────────────────────────────────────────────
+alter table bot_settings   enable row level security;
 alter table chapters       enable row level security;
 alter table chapter_tasks  enable row level security;
 alter table kpis           enable row level security;
@@ -127,6 +137,7 @@ alter table merch_items    enable row level security;
 alter table resource_links enable row level security;
 
 -- Allow anonymous read on all tables
+create policy "Public read bot_settings"   on bot_settings   for select using (true);
 create policy "Public read chapters"       on chapters       for select using (true);
 create policy "Public read chapter_tasks"  on chapter_tasks  for select using (true);
 create policy "Public read kpis"           on kpis           for select using (true);
@@ -136,6 +147,7 @@ create policy "Public read merch_items"    on merch_items    for select using (t
 create policy "Public read resource_links" on resource_links for select using (true);
 
 -- Allow authenticated users to insert/update/delete
+create policy "Auth write bot_settings"   on bot_settings   for all using (auth.role() = 'authenticated');
 create policy "Auth write chapters"       on chapters       for all using (auth.role() = 'authenticated');
 create policy "Auth write chapter_tasks"  on chapter_tasks  for all using (auth.role() = 'authenticated');
 create policy "Auth write kpis"           on kpis           for all using (auth.role() = 'authenticated');

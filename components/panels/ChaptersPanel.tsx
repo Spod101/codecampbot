@@ -90,7 +90,7 @@ export default function ChaptersPanel({ chapters, onShowChapter }: { chapters: C
               >
                 <span style={{ fontSize: '10px', fontWeight: 700, color: '#475569', fontFamily: 'monospace' }}>{c.number}</span>
                 <div>
-                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#f8fafc', marginBottom: '3px' }}>{c.name}</div>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#cfd5dd', marginBottom: '3px' }}>{c.name}</div>
                   <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '8px' }}>
                     {c.lead_name.split('&')[0].trim()} · {c.venue.split(',')[0]}
                   </div>

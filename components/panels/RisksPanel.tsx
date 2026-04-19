@@ -65,7 +65,7 @@ export default function RisksPanel({ risks }: { risks: Risk[] }) {
               >
                 <span style={{ fontSize: '10px', fontWeight: 700, color: '#475569', fontFamily: 'monospace', paddingTop: '1px' }}>{risk.code}</span>
                 <div>
-                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#f8fafc', marginBottom: '4px' }}>{risk.title}</div>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#cfd5dd', marginBottom: '4px' }}>{risk.title}</div>
                   <div style={{ fontSize: '11px', color: '#64748b', lineHeight: 1.6, marginBottom: '8px' }}>{risk.description}</div>
                   <Badge variant={tv}>{risk.chapter_tag}</Badge>
                 </div>

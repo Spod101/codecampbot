@@ -18,7 +18,7 @@ function ContactRow({ c, accent }: { c: Contact; accent: string }) {
         {c.emoji}
       </div>
       <div>
-        <div style={{ fontSize: '13px', fontWeight: 600, color: '#f8fafc', marginBottom: '2px' }}>{c.name}</div>
+        <div style={{ fontSize: '13px', fontWeight: 600, color: '#cfd5dd', marginBottom: '2px' }}>{c.name}</div>
         <div style={{ fontSize: '11px', color: '#64748b' }}>
           {c.role}{c.note ? <span style={{ color: '#475569' }}> · {c.note}</span> : null}
         </div>

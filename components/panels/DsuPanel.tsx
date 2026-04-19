@@ -48,7 +48,7 @@ export default function DsuPanel({ chapters, kpis, onShowChapter }: Props) {
         <div className="flex items-start justify-between flex-wrap gap-3 p-5">
           <div>
             <div className="text-[9px] text-[#06b6d4] tracking-[0.15em] uppercase mb-1.5 font-bold">📝 DEVCON Ops — Monday Morning DSU</div>
-            <div className="text-[20px] font-extrabold text-[#f8fafc]">Monday, April 13, 2026</div>
+            <div className="text-[20px] font-extrabold text-[#cfd5dd]">Monday, April 13, 2026</div>
             <div className="text-[11px] text-[#64748b] mt-0.5">Sui Build Beyond DEVCON PH · Q2 · 78 days remaining</div>
           </div>
           <div className="text-[10px] text-[#14b8a6] bg-[rgba(20,184,166,0.1)] border border-[rgba(20,184,166,0.25)] px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5 self-start">
@@ -86,7 +86,7 @@ export default function DsuPanel({ chapters, kpis, onShowChapter }: Props) {
               {campChapters.map(c => (
                 <div key={c.id} className="flex items-center gap-2 text-[11px]">
                   <span className="w-[7px] h-[7px] rounded-full flex-shrink-0" style={{ background: dotColor[c.status] }} />
-                  <span className="text-[#94a3b8]">
+                  <span className="text-[#8899aa]">
                     {c.name.replace('– NCR','– Letran').replace('– WV','– CPU Jaro').replace('– EV','– LNU')}{' '}
                     <em style={{ color: dotColor[c.status] }}>
                       {c.status === 'completed' ? '✓ Done' : c.date_text === 'TBD' ? 'TBD' : c.date_text.split(',')[0]}
@@ -107,7 +107,7 @@ export default function DsuPanel({ chapters, kpis, onShowChapter }: Props) {
               <span className="text-[11px] text-[#64748b] ml-1">done</span>
             </div>
             <ProgressBar percent={40} color="yellow" />
-            <div className="flex flex-col gap-1.5 mt-3 text-[11px] text-[#94a3b8]">
+            <div className="flex flex-col gap-1.5 mt-3 text-[11px] text-[#8899aa]">
               <div className="flex items-center gap-2"><span className="w-[7px] h-[7px] rounded-full bg-[#14b8a6] flex-shrink-0" />Bayleaf Intramuros National Kickoff <em className="text-[#14b8a6]">✓ Done</em></div>
               <div className="flex items-center gap-2"><span className="w-[7px] h-[7px] rounded-full bg-[#14b8a6] flex-shrink-0" />SHEisDEVCON Manila <em className="text-[#14b8a6]">✓ Done</em></div>
               <div className="flex items-center gap-2"><span className="w-[7px] h-[7px] rounded-full bg-[#f59e0b] flex-shrink-0" />SHEisDEVCON Iloilo <em className="text-[#f59e0b]">Apr 18</em></div>
@@ -129,7 +129,7 @@ export default function DsuPanel({ chapters, kpis, onShowChapter }: Props) {
               <div key={chapter.id} className="bg-[#0f172a] border border-[#1e293b] rounded-2xl p-5" style={{ borderLeft: `3px solid ${accentColor}` }}>
                 <div className="flex justify-between items-start gap-2 mb-2">
                   <div>
-                    <div className="text-[13px] font-extrabold text-[#f8fafc]">{chapter.city}</div>
+                    <div className="text-[13px] font-extrabold text-[#cfd5dd]">{chapter.city}</div>
                     <div className="text-[10px] text-[#64748b] mt-0.5">{chapter.venue.split(',')[0]} · Lead: {chapter.lead_name.split('&')[0].trim()}</div>
                   </div>
                   <Badge variant={b.variant}>{b.label}</Badge>
@@ -141,7 +141,7 @@ export default function DsuPanel({ chapters, kpis, onShowChapter }: Props) {
                   {chapter.todos.slice(0, 3).map(t => (
                     <div key={t.id} className="flex items-start gap-2 text-[11px]">
                       <span className={`flex-shrink-0 mt-0.5 font-bold ${t.status === 'urgent' ? 'text-[#e11d48]' : 'text-[#f59e0b]'}`}>→</span>
-                      <span className="text-[#94a3b8]"><strong className="text-[#f8fafc]">{t.owner}:</strong> {t.description}</span>
+                      <span className="text-[#8899aa]"><strong className="text-[#cfd5dd]">{t.owner}:</strong> {t.description}</span>
                     </div>
                   ))}
                 </div>
@@ -164,7 +164,7 @@ export default function DsuPanel({ chapters, kpis, onShowChapter }: Props) {
               <span className="text-[18px] leading-snug flex-shrink-0 mt-0.5">{r.icon}</span>
               <div>
                 <div className="text-[13px] font-bold mb-1" style={{ color: r.color }}>{r.title}</div>
-                <div className="text-[12px] text-[#94a3b8] leading-relaxed">{r.body}</div>
+                <div className="text-[12px] text-[#8899aa] leading-relaxed">{r.body}</div>
                 <div className="mt-2 text-[10px] font-bold uppercase tracking-[0.08em]" style={{ color: r.color }}>{r.owner}</div>
               </div>
             </div>
@@ -184,7 +184,7 @@ export default function DsuPanel({ chapters, kpis, onShowChapter }: Props) {
                 {chapter.todos.map(t => (
                   <div key={t.id} className="flex items-start gap-2 text-[12px] py-0.5">
                     <span className="flex-shrink-0 mt-0.5 font-bold" style={{ color: accentColor }}>→</span>
-                    <span className="text-[#94a3b8]"><strong className="text-[#f8fafc]">{t.owner}:</strong> {t.description}</span>
+                    <span className="text-[#8899aa]"><strong className="text-[#cfd5dd]">{t.owner}:</strong> {t.description}</span>
                   </div>
                 ))}
               </Card>
@@ -194,7 +194,7 @@ export default function DsuPanel({ chapters, kpis, onShowChapter }: Props) {
             <div className="text-[10px] font-bold uppercase tracking-[0.1em] mb-3 text-[#64748b]">📍 General / Backlog</div>
             <div className="flex items-start gap-2 text-[12px]">
               <span className="text-[#06b6d4] font-bold flex-shrink-0">→</span>
-              <span className="text-[#94a3b8]"><strong className="text-[#f8fafc]">Dom:</strong> Draft Q2 narrative report outline for Sui Foundation</span>
+              <span className="text-[#8899aa]"><strong className="text-[#cfd5dd]">Dom:</strong> Draft Q2 narrative report outline for Sui Foundation</span>
             </div>
           </Card>
         </div>

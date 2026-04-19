@@ -40,7 +40,7 @@ function ItemRows({ items, icon }: { items: MerchItem[]; icon: string }) {
             onMouseLeave={e => (e.currentTarget.style.borderColor = '#1e293b')}>
             <span style={{ fontSize: '14px', textAlign: 'center' }}>{icon}</span>
             <div>
-              <div style={{ fontSize: '12px', fontWeight: 600, color: '#f8fafc', marginBottom: '2px' }}>{item.name}</div>
+              <div style={{ fontSize: '12px', fontWeight: 600, color: '#cfd5dd', marginBottom: '2px' }}>{item.name}</div>
               <div style={{ fontSize: '10px', color: '#64748b' }}>{item.distribution} · <span style={{ color: '#06b6d4', fontWeight: 700 }}>×{item.quantity}</span></div>
             </div>
             <Badge variant={b.variant}>{b.label}</Badge>
@@ -82,7 +82,7 @@ export default function MerchPanel({ merch_items, chapters }: { merch_items: Mer
       </div>
 
       {/* Alert */}
-      <div style={{ display: 'flex', gap: '10px', padding: '12px 16px', background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: '12px', fontSize: '12px', color: '#94a3b8' }}>
+      <div style={{ display: 'flex', gap: '10px', padding: '12px 16px', background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: '12px', fontSize: '12px', color: '#8899aa' }}>
         <span style={{ color: '#f59e0b', flexShrink: 0 }}>📦</span>
         <span>Iloilo merch sent. Bukidnon — <strong style={{ color: '#e11d48' }}>NOT YET SENT</strong>. Must be packed and shipped before <strong style={{ color: '#f59e0b' }}>Apr 29 (T-7)</strong>.</span>
       </div>
@@ -100,7 +100,7 @@ export default function MerchPanel({ merch_items, chapters }: { merch_items: Mer
                   onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(6,182,212,0.3)')}
                   onMouseLeave={e => (e.currentTarget.style.borderColor = '#1e293b')}>
                   <span style={{ fontSize: '11px', color: '#475569', fontFamily: 'monospace', fontWeight: 700 }}>{c.number}</span>
-                  <span style={{ fontSize: '12px', fontWeight: 600, color: '#f8fafc' }}>{c.name}</span>
+                  <span style={{ fontSize: '12px', fontWeight: 600, color: '#cfd5dd' }}>{c.name}</span>
                   <Badge variant={m.variant}>{m.label}</Badge>
                 </div>
               )
@@ -116,7 +116,7 @@ export default function MerchPanel({ merch_items, chapters }: { merch_items: Mer
               <div key={v.item} style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '12px', alignItems: 'center', padding: '12px 16px', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px', transition: 'border-color .2s' }}
                 onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(6,182,212,0.3)')}
                 onMouseLeave={e => (e.currentTarget.style.borderColor = '#1e293b')}>
-                <span style={{ fontSize: '11px', color: '#94a3b8' }}>{v.item}</span>
+                <span style={{ fontSize: '11px', color: '#8899aa' }}>{v.item}</span>
                 <Badge variant={v.badge}>{v.label}</Badge>
               </div>
             ))}

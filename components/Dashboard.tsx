@@ -13,8 +13,9 @@ import MerchPanel from '@/components/panels/MerchPanel'
 import LinksPanel from '@/components/panels/LinksPanel'
 import ContactsPanel from '@/components/panels/ContactsPanel'
 import ContentPanel from '@/components/panels/ContentPanel'
+import SettingsPanel from '@/components/panels/SettingsPanel'
 
-type TabId = 'overview' | 'kpi' | 'milestones' | 'chapters' | 'risks' | 'merch' | 'links' | 'contacts' | 'content'
+type TabId = 'overview' | 'kpi' | 'milestones' | 'chapters' | 'risks' | 'merch' | 'links' | 'contacts' | 'content' | 'settings'
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const C = {
@@ -25,8 +26,8 @@ const C = {
   teal: '#14b8a6',
   rose: '#e11d48',
   muted: '#64748b',
-  text: '#f8fafc',
-  dim: '#94a3b8',
+  text: '#cfd5dd',
+  dim: '#8899aa',
 }
 
 const CHAPTER_GRADIENTS = [
@@ -70,6 +71,12 @@ const NAV_SECTIONS = [
       { id: 'links'    as TabId, label: 'Resource Links', icon: '⊗' },
       { id: 'contacts' as TabId, label: 'Contacts',       icon: '⊕' },
       { id: 'content'  as TabId, label: 'Content Hub',    icon: '⊘' },
+    ],
+  },
+  {
+    label: 'System',
+    items: [
+      { id: 'settings' as TabId, label: 'Settings',       icon: '⚙' },
     ],
   },
 ]
@@ -610,6 +617,7 @@ export default function Dashboard({ initialChapterId }: DashboardProps) {
               {activeTab === 'links'      && <LinksPanel links={links} chapters={chapters} contacts={contacts} onShowChapter={showChapter} />}
               {activeTab === 'contacts'   && <ContactsPanel contacts={contacts} />}
               {activeTab === 'content'    && <ContentPanel />}
+              {activeTab === 'settings'   && <SettingsPanel />}
             </div>
           )}
         </main>

@@ -48,7 +48,7 @@ export default function LinksPanel({ links, chapters, contacts, onShowChapter }:
                   {c.number}
                 </div>
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#f8fafc', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</div>
+                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#cfd5dd', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</div>
                   <div style={{ fontSize: '10px', color: '#64748b', marginTop: '1px' }}>{c.status.replace(/_/g,' ')}</div>
                 </div>
                 <span style={{ marginLeft: 'auto', color: '#475569', fontSize: '12px', flexShrink: 0 }}>→</span>
@@ -72,7 +72,7 @@ export default function LinksPanel({ links, chapters, contacts, onShowChapter }:
                   {link.icon}
                 </div>
                 <div>
-                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#f8fafc', marginBottom: '2px' }}>{link.name}</div>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#cfd5dd', marginBottom: '2px' }}>{link.name}</div>
                   <div style={{ fontSize: '11px', color: '#64748b' }}>{link.description}</div>
                 </div>
                 <span style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', padding: '4px 10px', borderRadius: '8px', background: a.bg, color: a.text, whiteSpace: 'nowrap' }}>
@@ -99,7 +99,7 @@ export default function LinksPanel({ links, chapters, contacts, onShowChapter }:
                   {c.emoji}
                 </div>
                 <div>
-                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#f8fafc', marginBottom: '2px' }}>{c.name}</div>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#cfd5dd', marginBottom: '2px' }}>{c.name}</div>
                   <div style={{ fontSize: '11px', color: '#64748b' }}>{c.role}</div>
                 </div>
                 <span style={{ fontSize: '11px', fontWeight: 600, color: '#06b6d4', fontFamily: 'monospace' }}>{c.handle}</span>

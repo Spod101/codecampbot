@@ -50,7 +50,7 @@ export default function MilestonesPanel() {
     <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
       {/* Info banner */}
-      <div style={{ background: 'rgba(6,182,212,0.06)', border: '1px solid rgba(6,182,212,0.18)', borderRadius: '14px', padding: '14px 18px', fontSize: '13px', color: '#94a3b8', lineHeight: 1.7 }}>
+      <div style={{ background: 'rgba(6,182,212,0.06)', border: '1px solid rgba(6,182,212,0.18)', borderRadius: '14px', padding: '14px 18px', fontSize: '13px', color: '#8899aa', lineHeight: 1.7 }}>
         <strong style={{ color: '#06b6d4' }}>Partnership KPI Timeline</strong> — Dec '25 (Q4) → Nov '26 (Q4). Currently in{' '}
         <strong style={{ color: '#f59e0b' }}>April '26 (Q2)</strong>.
       </div>
@@ -97,7 +97,7 @@ export default function MilestonesPanel() {
           <tbody>
             {MILESTONE_ROWS.map((row, ri) => (
               <tr key={ri}>
-                <td style={{ padding: '11px 14px', borderBottom: '1px solid #1e293b', borderRight: '1px solid #1e293b', fontWeight: 600, color: '#f8fafc', fontSize: '12px', background: 'rgba(15,23,42,0.6)', whiteSpace: 'nowrap' }}>
+                <td style={{ padding: '11px 14px', borderBottom: '1px solid #1e293b', borderRight: '1px solid #1e293b', fontWeight: 600, color: '#cfd5dd', fontSize: '12px', background: 'rgba(15,23,42,0.6)', whiteSpace: 'nowrap' }}>
                   {row.label}
                 </td>
                 {MONTHS.map(m => {
@@ -138,7 +138,7 @@ export default function MilestonesPanel() {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
             {Q1_ITEMS.map((item, i) => (
-              <div key={i} style={{ display: 'flex', gap: '10px', fontSize: '12px', color: '#94a3b8', lineHeight: 1.5 }}>
+              <div key={i} style={{ display: 'flex', gap: '10px', fontSize: '12px', color: '#8899aa', lineHeight: 1.5 }}>
                 <span style={{ color: '#14b8a6', flexShrink: 0, marginTop: '1px' }}>✅</span>
                 {item}
               </div>
@@ -154,7 +154,7 @@ export default function MilestonesPanel() {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
             {Q2_ITEMS.map((item, i) => (
-              <div key={i} style={{ display: 'flex', gap: '10px', fontSize: '12px', color: '#94a3b8', lineHeight: 1.5 }}>
+              <div key={i} style={{ display: 'flex', gap: '10px', fontSize: '12px', color: '#8899aa', lineHeight: 1.5 }}>
                 <span style={{ color: item.color, flexShrink: 0, marginTop: '1px' }}>{item.icon}</span>
                 {item.text}
               </div>

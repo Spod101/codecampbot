@@ -128,7 +128,7 @@ function CheckRow({ item }: { item: CheckItem }) {
       </span>
       {/* Task + date */}
       <div>
-        <div style={{ fontSize: '12px', fontWeight: 600, color: item.isEvent ? '#f8fafc' : '#cbd5e1', marginBottom: '2px' }}>{item.task}</div>
+        <div style={{ fontSize: '12px', fontWeight: 600, color: item.isEvent ? '#cfd5dd' : '#cbd5e1', marginBottom: '2px' }}>{item.task}</div>
         <div style={{ fontSize: '10px', color: '#475569' }}>{item.date}</div>
       </div>
       {/* Status pill */}
@@ -160,7 +160,7 @@ export default function ChapterDetailPanel({ chapterId, chapters, onBack }: Prop
   /* Stat tiles */
   const statTiles = [
     { label: 'Event Date',  value: chapter.date_text || 'TBD',                                      color: accent           },
-    { label: 'Countdown',   value: relDay,                                                            color: '#94a3b8'        },
+    { label: 'Countdown',   value: relDay,                                                            color: '#8899aa'        },
     { label: 'Pax Target',  value: chapter.pax_target ? String(chapter.pax_target) : 'TBD',         color: accent           },
     { label: 'Actual Pax',  value: chapter.pax_actual ? String(chapter.pax_actual) : 'TBC ⚠',       color: chapter.pax_actual ? '#14b8a6' : '#f59e0b' },
     { label: 'Merch',       value: chapter.merch_status,                                              color: chapter.merch_status.startsWith('✓') ? '#14b8a6' : '#f59e0b' },
@@ -174,7 +174,7 @@ export default function ChapterDetailPanel({ chapterId, chapters, onBack }: Prop
       <button
         onClick={onBack}
         style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 14px', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '10px', fontSize: '11px', fontWeight: 700, color: '#64748b', cursor: 'pointer', transition: 'all .2s' }}
-        onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(6,182,212,0.4)'; e.currentTarget.style.color = '#f8fafc' }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(6,182,212,0.4)'; e.currentTarget.style.color = '#cfd5dd' }}
         onMouseLeave={e => { e.currentTarget.style.borderColor = '#1e293b'; e.currentTarget.style.color = '#64748b' }}
       >
         ← All Chapters
@@ -198,7 +198,7 @@ export default function ChapterDetailPanel({ chapterId, chapters, onBack }: Prop
         </div>
 
         {/* Chapter name */}
-        <h2 style={{ fontSize: 'clamp(22px,4vw,32px)', fontWeight: 900, color: '#f8fafc', lineHeight: 1.1, margin: '0 0 8px' }}>
+        <h2 style={{ fontSize: 'clamp(22px,4vw,32px)', fontWeight: 900, color: '#cfd5dd', lineHeight: 1.1, margin: '0 0 8px' }}>
           {chapter.name}
         </h2>
 
@@ -232,7 +232,7 @@ export default function ChapterDetailPanel({ chapterId, chapters, onBack }: Prop
       </div>
 
       {/* ── Content update alert ─────────────────────────────────────────── */}
-      <div style={{ display: 'flex', gap: '10px', padding: '12px 16px', background: 'rgba(6,182,212,0.06)', border: '1px solid rgba(6,182,212,0.2)', borderRadius: '12px', fontSize: '12px', color: '#94a3b8' }}>
+      <div style={{ display: 'flex', gap: '10px', padding: '12px 16px', background: 'rgba(6,182,212,0.06)', border: '1px solid rgba(6,182,212,0.2)', borderRadius: '12px', fontSize: '12px', color: '#8899aa' }}>
         <span style={{ fontSize: '13px', flexShrink: 0 }}>📋</span>
         <span>
           <strong style={{ color: '#06b6d4' }}>Content Update:</strong> Mike and Lady are updating the code camp content, installation guide, and installation procedures based on learnings from the Letran pilot. All subsequent chapters will use the updated version.
@@ -267,7 +267,7 @@ export default function ChapterDetailPanel({ chapterId, chapters, onBack }: Prop
                 { code: 'T-7',  hint: 'Dry run', color: '#64748b' },
                 { code: 'T-3',  hint: 'Final prep', color: '#64748b' },
                 { code: 'T-0 ☻', hint: 'Event day', color: '#06b6d4' },
-                { code: 'T+3 / T+7', hint: 'Wrap-ups: pax, receipts, report', color: '#94a3b8' },
+                { code: 'T+3 / T+7', hint: 'Wrap-ups: pax, receipts, report', color: '#8899aa' },
               ].map(p => (
                 <span key={p.code} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                   <span style={{ fontSize: '8px', fontWeight: 800, fontFamily: 'monospace', padding: '2px 6px', borderRadius: '4px', background: 'rgba(71,85,105,0.15)', border: '1px solid #1e293b', color: p.color, whiteSpace: 'nowrap' }}>{p.code}</span>
@@ -305,7 +305,7 @@ export default function ChapterDetailPanel({ chapterId, chapters, onBack }: Prop
               >
                 <span style={{ fontSize: '12px', paddingTop: '1px' }}>{t.status === 'urgent' ? '🔴' : '→'}</span>
                 <div>
-                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#f8fafc', marginBottom: '2px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#cfd5dd', marginBottom: '2px' }}>
                     <span style={{ color: accent }}>{t.owner}:</span> {t.description}
                   </div>
                 </div>
@@ -325,9 +325,9 @@ export default function ChapterDetailPanel({ chapterId, chapters, onBack }: Prop
         </p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
           {PILOT_NOTES.map((n, i) => (
-            <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '12px', color: '#94a3b8', lineHeight: 1.6 }}>
+            <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '12px', color: '#8899aa', lineHeight: 1.6 }}>
               <span style={{ flexShrink: 0, marginTop: '2px', width: '6px', height: '6px', borderRadius: '50%', background: n.ok ? '#14b8a6' : '#f59e0b', display: 'inline-block' }} />
-              <span dangerouslySetInnerHTML={{ __html: n.text.replace(/\*\*(.+?)\*\*/g, '<strong style="color:#f8fafc">$1</strong>') }} />
+              <span dangerouslySetInnerHTML={{ __html: n.text.replace(/\*\*(.+?)\*\*/g, '<strong style="color:#cfd5dd">$1</strong>') }} />
             </div>
           ))}
         </div>
