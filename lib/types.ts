@@ -32,6 +32,7 @@ export interface Chapter {
 
 export interface ChapterTask {
   id: string
+  short_id: string | null
   chapter_id: string
   owner: string
   description: string

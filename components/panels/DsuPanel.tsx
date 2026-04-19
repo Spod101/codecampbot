@@ -4,6 +4,7 @@ import SectionTitle from '@/components/ui/SectionTitle'
 import ProgressBar from '@/components/ui/ProgressBar'
 import Card from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
+import { liveCountdown } from '@/lib/utils'
 import type { Chapter, Kpi, BadgeVariant } from '@/lib/types'
 
 const statusBadge: Record<string, { variant: BadgeVariant; label: string }> = {
@@ -136,7 +137,7 @@ export default function DsuPanel({ chapters, kpis, onShowChapter }: Props) {
                 </div>
                 <div className="text-[11px] font-semibold mb-1.5" style={{ color: chapterDateColor[chapter.status] }}>{chapter.date_text}</div>
                 <ProgressBar percent={chapter.progress_percent} color={chapter.color === 'yellow' ? 'yellow' : chapter.color === 'teal' ? 'teal' : chapter.color === 'purple' ? 'purple' : 'default'} />
-                <div className="text-[10px] text-[#64748b] mt-1.5 mb-3">{chapter.countdown_text}</div>
+                <div className="text-[10px] text-[#64748b] mt-1.5 mb-3">{liveCountdown(chapter.date_iso)}</div>
                 <div className="border-t border-[#1e293b] pt-3 flex flex-col gap-1.5">
                   {chapter.todos.slice(0, 3).map(t => (
                     <div key={t.id} className="flex items-start gap-2 text-[11px]">

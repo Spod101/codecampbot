@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { fetchChapters, fetchKpis, fetchRisks, fetchContacts, fetchMerchItems, fetchLinks } from '@/lib/supabase/queries'
 import type { Chapter, Kpi, Risk, Contact, MerchItem, ResourceLink } from '@/lib/types'
@@ -86,10 +86,15 @@ const MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct'
 const DAY_NAMES   = ['Su','Mo','Tu','We','Th','Fr','Sa']
 const DAY_FULL    = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
 
+// Q2 report deadline — Sui Foundation
+const Q2_DEADLINE = new Date('2026-06-30T23:59:59')
+
+
 // ── Calendar Modal ────────────────────────────────────────────────────────────
 function CalendarModal({ chapters, onClose }: { chapters: Chapter[]; onClose: () => void }) {
-  const [ym, setYm]         = useState({ year: 2026, month: 3 })
-  const [selected, setSelected] = useState<number | null>(17)
+  const now = new Date()
+  const [ym, setYm]         = useState({ year: now.getFullYear(), month: now.getMonth() })
+  const [selected, setSelected] = useState<number | null>(now.getDate())
 
   const daysInMonth = new Date(ym.year, ym.month + 1, 0).getDate()
   const firstDay    = new Date(ym.year, ym.month, 1).getDay()
@@ -139,14 +144,15 @@ function CalendarModal({ chapters, onClose }: { chapters: Chapter[]; onClose: ()
             {Array.from({ length: firstDay }).map((_,i) => <div key={`e${i}`} />)}
             {Array.from({ length: daysInMonth }, (_,i) => i + 1).map(day => {
               const isSelected = day === selected
+              const isToday = day === now.getDate() && ym.year === now.getFullYear() && ym.month === now.getMonth()
               const cats = (eventsByDay[day] ?? []).map(c => getCat(c.number))
               return (
                 <div
                   key={day}
                   onClick={() => setSelected(day === selected ? null : day)}
-                  style={{ padding:'6px 2px', borderRadius:'8px', cursor:'pointer', textAlign:'center', background:isSelected ? 'linear-gradient(135deg,#06b6d4,#14b8a6)' : 'transparent', boxShadow:isSelected ? '0 4px 12px rgba(6,182,212,0.4)' : undefined, transition:'all .2s' }}
+                  style={{ padding:'6px 2px', borderRadius:'8px', cursor:'pointer', textAlign:'center', background:isSelected ? 'linear-gradient(135deg,#06b6d4,#14b8a6)' : 'transparent', boxShadow:isSelected ? '0 4px 12px rgba(6,182,212,0.4)' : undefined, transition:'all .2s', outline: isToday && !isSelected ? '1px solid rgba(6,182,212,0.5)' : undefined }}
                 >
-                  <div style={{ fontSize:'12px', fontWeight:isSelected ? 700 : 400, color:isSelected ? '#fff' : C.dim }}>{day}</div>
+                  <div style={{ fontSize:'12px', fontWeight:isSelected || isToday ? 700 : 400, color:isSelected ? '#fff' : isToday ? C.cyan : C.dim }}>{day}</div>
                   {cats.length > 0 && (
                     <div style={{ display:'flex', justifyContent:'center', gap:'2px', marginTop:'2px' }}>
                       {cats.slice(0,3).map((cat,i) => (
@@ -445,7 +451,19 @@ function Sidebar({ activeTab, activeChapterId, chapters, onSwitch, onShowChapter
 
 // ── Top Header ────────────────────────────────────────────────────────────────
 function TopHeader({ calendarOpen, onToggleCalendar }: { calendarOpen: boolean; onToggleCalendar: () => void }) {
-  const today = new Date(2026, 3, 17)
+  const [now, setNow] = useState(() => new Date())
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000)
+    return () => clearInterval(id)
+  }, [])
+
+  const q2DaysLeft = Math.ceil((Q2_DEADLINE.getTime() - now.getTime()) / 86_400_000)
+  const q2Label    = q2DaysLeft > 0 ? `${q2DaysLeft}d to Q2 End` : q2DaysLeft === 0 ? 'Q2 Ends Today' : 'Q2 Complete'
+
+  const hh = String(now.getHours()).padStart(2, '0')
+  const mm = String(now.getMinutes()).padStart(2, '0')
+  const ss = String(now.getSeconds()).padStart(2, '0')
 
   return (
     <header style={{ position:'sticky', top:0, zIndex:90, height:'80px', background:'rgba(2,6,23,0.95)', backdropFilter:'blur(16px)', borderBottom:`1px solid ${C.border}`, display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 32px', flexShrink:0 }}>
@@ -462,7 +480,9 @@ function TopHeader({ calendarOpen, onToggleCalendar }: { calendarOpen: boolean; 
       {/* Live badge */}
       <div style={{ display:'flex', alignItems:'center', gap:'8px', background:'rgba(6,182,212,0.08)', border:'1px solid rgba(6,182,212,0.2)', borderRadius:'999px', padding:'6px 14px' }}>
         <div style={{ width:'6px', height:'6px', borderRadius:'50%', background:C.cyan, animation:'pulse 2s infinite' }} />
-        <span style={{ fontSize:'11px', fontWeight:700, color:C.cyan, textTransform:'uppercase', letterSpacing:'0.1em' }}>Live · Q2 · 78d Remaining</span>
+        <span style={{ fontSize:'11px', fontWeight:700, color:C.cyan, textTransform:'uppercase', letterSpacing:'0.1em' }}>
+          Live · Q2 · {q2Label}
+        </span>
       </div>
 
       {/* Right controls */}
@@ -471,31 +491,20 @@ function TopHeader({ calendarOpen, onToggleCalendar }: { calendarOpen: boolean; 
         {/* Calendar trigger */}
         <button
           onClick={onToggleCalendar}
-          style={{ display:'flex', alignItems:'center', gap:'10px', background:calendarOpen ? 'rgba(6,182,212,0.12)' : 'rgba(15,23,42,0.8)', border:`1px solid ${calendarOpen ? 'rgba(6,182,212,0.4)' : C.border}`, borderRadius:'12px', padding:'9px 14px', cursor:'pointer', transition:'all .3s ease-out', width:'180px' }}
+          style={{ display:'flex', alignItems:'center', gap:'10px', background:calendarOpen ? 'rgba(6,182,212,0.12)' : 'rgba(15,23,42,0.8)', border:`1px solid ${calendarOpen ? 'rgba(6,182,212,0.4)' : C.border}`, borderRadius:'12px', padding:'9px 14px', cursor:'pointer', transition:'all .3s ease-out', minWidth:'200px' }}
         >
-          <div style={{ lineHeight:1.1 }}>
+          <div style={{ lineHeight:1.3 }}>
             <div style={{ fontSize:'14px', fontWeight:700, color:C.teal, textTransform:'uppercase', letterSpacing:'0.06em' }}>
-              {DAY_FULL[today.getDay()].slice(0,3).toUpperCase()}
+              {DAY_FULL[now.getDay()].slice(0,3).toUpperCase()} {now.getDate()} {MONTH_SHORT[now.getMonth()]}
             </div>
-            <div style={{ fontSize:'10px', color:C.muted, textTransform:'uppercase', letterSpacing:'0.08em', marginTop:'2px' }}>
-              {MONTH_SHORT[today.getMonth()]} {today.getFullYear()}
+            <div style={{ fontSize:'10px', color:C.muted, fontFamily:'monospace', letterSpacing:'0.05em', marginTop:'1px' }}>
+              {hh}:{mm}:{ss} · {now.getFullYear()}
             </div>
           </div>
           <div style={{ marginLeft:'auto', width:'32px', height:'32px', borderRadius:'8px', background:'rgba(6,182,212,0.1)', border:'1px solid rgba(6,182,212,0.2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'15px' }}>
             📅
           </div>
         </button>
-
-        {/* Search */}
-        <div style={{ position:'relative', width:'256px' }}>
-          <span style={{ position:'absolute', left:'14px', top:'50%', transform:'translateY(-50%)', color:C.muted, fontSize:'14px', pointerEvents:'none' }}>🔍</span>
-          <input
-            placeholder="Search events, chapters..."
-            style={{ width:'100%', padding:'9px 16px 9px 40px', borderRadius:'999px', background:'rgba(15,23,42,0.8)', border:`1px solid ${C.border}`, color:C.dim, fontSize:'13px', outline:'none', fontFamily:"'Plus Jakarta Sans', sans-serif", transition:'border-color .3s ease-out' }}
-            onFocus={e  => (e.currentTarget.style.borderColor = 'rgba(6,182,212,0.4)')}
-            onBlur={e   => (e.currentTarget.style.borderColor = C.border)}
-          />
-        </div>
       </div>
     </header>
   )
@@ -518,8 +527,8 @@ export default function Dashboard({ initialChapterId }: DashboardProps) {
   const [merchItems, setMerchItems] = useState<MerchItem[]>([])
   const [links,      setLinks]      = useState<ResourceLink[]>([])
 
-  useEffect(() => {
-    Promise.all([
+  const refresh = useCallback(() => {
+    return Promise.all([
       fetchChapters(), fetchKpis(), fetchRisks(),
       fetchContacts(), fetchMerchItems(), fetchLinks(),
     ]).then(([c, k, r, co, m, l]) => {
@@ -527,6 +536,8 @@ export default function Dashboard({ initialChapterId }: DashboardProps) {
       setContacts(co); setMerchItems(m); setLinks(l)
     })
   }, [])
+
+  useEffect(() => { refresh() }, [refresh])
 
   function showChapter(id: string) {
     router.push('/chapters/' + id)
@@ -570,6 +581,7 @@ export default function Dashboard({ initialChapterId }: DashboardProps) {
                 chapterId={initialChapterId}
                 chapters={chapters}
                 onBack={() => router.push('/')}
+                onRefresh={refresh}
               />
             )
 
@@ -609,13 +621,13 @@ export default function Dashboard({ initialChapterId }: DashboardProps) {
 
           ) : (
             <div className="animate-fade-in">
-              {activeTab === 'kpi'        && <KpiPanel kpis={kpis} chapters={chapters} />}
+              {activeTab === 'kpi'        && <KpiPanel kpis={kpis} chapters={chapters} setKpis={setKpis} />}
               {activeTab === 'milestones' && <MilestonesPanel />}
-              {activeTab === 'chapters'   && <ChaptersPanel chapters={chapters} onShowChapter={showChapter} />}
-              {activeTab === 'risks'      && <RisksPanel risks={risks} />}
-              {activeTab === 'merch'      && <MerchPanel merch_items={merchItems} chapters={chapters} />}
+              {activeTab === 'chapters'   && <ChaptersPanel chapters={chapters} onShowChapter={showChapter} onRefresh={refresh} />}
+              {activeTab === 'risks'      && <RisksPanel risks={risks} setRisks={setRisks} onRefresh={refresh} />}
+              {activeTab === 'merch'      && <MerchPanel merch_items={merchItems} chapters={chapters} onRefresh={refresh} />}
               {activeTab === 'links'      && <LinksPanel links={links} chapters={chapters} contacts={contacts} onShowChapter={showChapter} />}
-              {activeTab === 'contacts'   && <ContactsPanel contacts={contacts} />}
+              {activeTab === 'contacts'   && <ContactsPanel contacts={contacts} onRefresh={refresh} />}
               {activeTab === 'content'    && <ContentPanel />}
               {activeTab === 'settings'   && <SettingsPanel />}
             </div>

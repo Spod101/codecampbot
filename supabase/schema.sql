@@ -35,6 +35,7 @@ create table if not exists chapters (
 -- ────────────────────────────────────────────────────────────
 create table if not exists chapter_tasks (
   id          uuid primary key default gen_random_uuid(),
+  short_id    text unique,                        -- e.g. 'MNL-t1', 'TCL-t3'
   chapter_id  text references chapters(id) on delete cascade,
   owner       text not null,
   description text not null,

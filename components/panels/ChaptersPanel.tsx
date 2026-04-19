@@ -1,8 +1,12 @@
 'use client'
+import { useState } from 'react'
 import PanelHeader from '@/components/ui/PanelHeader'
 import Badge from '@/components/ui/Badge'
 import ProgressBar from '@/components/ui/ProgressBar'
-import type { Chapter, BadgeVariant } from '@/lib/types'
+import SlideOver from '@/components/ui/SlideOver'
+import FormField, { FieldInput, FieldSelect } from '@/components/ui/FormField'
+import { liveCountdown } from '@/lib/utils'
+import type { Chapter, BadgeVariant, ChapterStatus } from '@/lib/types'
 
 const statusBadge: Record<string, { variant: BadgeVariant; label: string }> = {
   completed:     { variant: 'done',    label: '✓ Completed'     },
@@ -30,7 +34,34 @@ const STAT_COLORS = [
   { color: '#a78bfa', bg: 'rgba(167,139,250,0.06)', border: 'rgba(167,139,250,0.2)' },
 ]
 
-export default function ChaptersPanel({ chapters, onShowChapter }: { chapters: Chapter[]; onShowChapter: (id: string) => void }) {
+export default function ChaptersPanel({ chapters, onShowChapter, onRefresh }: { chapters: Chapter[]; onShowChapter: (id: string) => void; onRefresh: () => Promise<void> }) {
+  const [editChapter, setEditChapter] = useState<Chapter | null>(null)
+  const [form, setForm] = useState({ status: '', pax_actual: '', progress_percent: '' })
+  const [saving, setSaving] = useState(false)
+
+  function openEdit(e: React.MouseEvent, c: Chapter) {
+    e.stopPropagation()
+    setEditChapter(c)
+    setForm({ status: c.status, pax_actual: String(c.pax_actual ?? ''), progress_percent: String(c.progress_percent) })
+  }
+
+  async function saveChapter() {
+    if (!editChapter) return
+    setSaving(true)
+    await fetch('/api/chapters', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: editChapter.id,
+        status: form.status,
+        pax_actual: form.pax_actual !== '' ? form.pax_actual : undefined,
+        progress_percent: form.progress_percent !== '' ? form.progress_percent : undefined,
+      }),
+    })
+    await onRefresh()
+    setSaving(false)
+    setEditChapter(null)
+  }
   const done   = chapters.filter(c => c.status === 'completed').length
   const active = chapters.filter(c => ['in_progress','activating','pencil_booked'].includes(c.status)).length
   const resch  = chapters.filter(c => c.status === 'rescheduling').length
@@ -84,7 +115,7 @@ export default function ChaptersPanel({ chapters, onShowChapter }: { chapters: C
               <div
                 key={c.id}
                 onClick={() => onShowChapter(c.id)}
-                style={{ display: 'grid', gridTemplateColumns: '28px 1fr auto auto', gap: '14px', alignItems: 'center', padding: '16px 18px', background: '#0f172a', border: '1px solid #1e293b', borderLeft: `3px solid ${accent}`, borderRadius: '14px', cursor: 'pointer', transition: 'border-color .2s' }}
+                style={{ display: 'grid', gridTemplateColumns: '28px 1fr auto auto auto', gap: '14px', alignItems: 'center', padding: '16px 18px', background: '#0f172a', border: '1px solid #1e293b', borderLeft: `3px solid ${accent}`, borderRadius: '14px', cursor: 'pointer', transition: 'border-color .2s' }}
                 onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(6,182,212,0.35)')}
                 onMouseLeave={e => { e.currentTarget.style.borderLeft = `3px solid ${accent}`; e.currentTarget.style.borderColor = '#1e293b' }}
               >
@@ -102,17 +133,62 @@ export default function ChaptersPanel({ chapters, onShowChapter }: { chapters: C
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontSize: '13px', fontWeight: 700, color: accent }}>{c.pax_target ?? 'TBC'}</div>
                   <div style={{ fontSize: '9px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: '2px' }}>target pax</div>
-                  <div style={{ fontSize: '9px', color: '#475569', marginTop: '6px' }}>{c.countdown_text}</div>
+                  <div style={{ fontSize: '9px', color: '#475569', marginTop: '6px' }}>{liveCountdown(c.date_iso)}</div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '5px' }}>
                   <Badge variant={b.variant}>{b.label}</Badge>
                   <Badge variant={m.variant}>{m.label}</Badge>
                 </div>
+                <button
+                  onClick={e => openEdit(e, c)}
+                  style={{ padding: '5px 10px', borderRadius: '8px', background: 'rgba(6,182,212,0.06)', border: '1px solid rgba(6,182,212,0.2)', color: '#06b6d4', fontSize: '11px', cursor: 'pointer', flexShrink: 0 }}
+                >
+                  Edit
+                </button>
               </div>
             )
           })}
         </div>
       </div>
+
+      {/* Edit chapter slide-over */}
+      <SlideOver open={editChapter !== null} onClose={() => setEditChapter(null)} title={`Edit: ${editChapter?.name ?? ''}`}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <FormField label="Status">
+            <FieldSelect value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}>
+              <option value="in_progress">In Progress</option>
+              <option value="activating">Activating</option>
+              <option value="pencil_booked">Pencil-booked</option>
+              <option value="tbc">TBC</option>
+              <option value="rescheduling">Rescheduling</option>
+              <option value="completed">Completed</option>
+            </FieldSelect>
+          </FormField>
+          <FormField label="Actual Pax">
+            <FieldInput
+              type="number" min="0"
+              placeholder="Actual attendance"
+              value={form.pax_actual}
+              onChange={e => setForm(f => ({ ...f, pax_actual: e.target.value }))}
+            />
+          </FormField>
+          <FormField label="Progress %">
+            <FieldInput
+              type="number" min="0" max="100"
+              placeholder="0–100"
+              value={form.progress_percent}
+              onChange={e => setForm(f => ({ ...f, progress_percent: e.target.value }))}
+            />
+          </FormField>
+          <button
+            onClick={saveChapter}
+            disabled={saving}
+            style={{ padding: '10px', borderRadius: '10px', background: saving ? '#1e293b' : 'linear-gradient(135deg,#06b6d4,#14b8a6)', border: 'none', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: saving ? 'wait' : 'pointer' }}
+          >
+            {saving ? 'Saving…' : 'Save Changes'}
+          </button>
+        </div>
+      </SlideOver>
 
       {/* Quick nav */}
       <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', padding: '20px' }}>

@@ -1,7 +1,9 @@
+'use client'
 import { PAX_ROWS } from '@/lib/data'
 import KpiTile from '@/components/ui/KpiTile'
 import PanelHeader from '@/components/ui/PanelHeader'
 import Badge from '@/components/ui/Badge'
+import { liveCountdown } from '@/lib/utils'
 import type { Chapter, Kpi, BadgeVariant } from '@/lib/types'
 
 const statusBadge: Record<string, { variant: BadgeVariant; label: string }> = {
@@ -23,7 +25,16 @@ const CARD: React.CSSProperties = {
   transition: 'border-color .2s',
 }
 
-export default function KpiPanel({ kpis, chapters }: { kpis: Kpi[]; chapters: Chapter[] }) {
+export default function KpiPanel({ kpis, chapters, setKpis }: { kpis: Kpi[]; chapters: Chapter[]; setKpis: React.Dispatch<React.SetStateAction<Kpi[]>> }) {
+
+  async function saveKpi(id: string, value: string) {
+    setKpis(prev => prev.map(k => k.id === id ? { ...k, value } : k))
+    await fetch('/api/kpis', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, value }),
+    })
+  }
   const done    = chapters.filter(c => c.status === 'completed').length
   const active  = chapters.filter(c => ['in_progress','activating','pencil_booked'].includes(c.status)).length
   const atRisk  = chapters.filter(c => ['rescheduling','tbc'].includes(c.status)).length
@@ -35,7 +46,7 @@ export default function KpiPanel({ kpis, chapters }: { kpis: Kpi[]; chapters: Ch
       {/* KPI metric tiles */}
       <div className="grid grid-cols-[repeat(auto-fit,minmax(130px,1fr))] gap-3">
         {kpis.map(k => (
-          <KpiTile key={k.id} value={k.value} label={k.label} sublabel={k.sublabel} color={k.color} />
+          <KpiTile key={k.id} id={k.id} value={k.value} label={k.label} sublabel={k.sublabel} color={k.color} onSave={saveKpi} />
         ))}
       </div>
 
@@ -107,7 +118,7 @@ export default function KpiPanel({ kpis, chapters }: { kpis: Kpi[]; chapters: Ch
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
                   <Badge variant={b.variant}>{b.label}</Badge>
-                  <span style={{ fontSize: '9px', color: '#475569' }}>{c.countdown_text}</span>
+                  <span style={{ fontSize: '9px', color: '#475569' }}>{liveCountdown(c.date_iso)}</span>
                 </div>
               </div>
             )

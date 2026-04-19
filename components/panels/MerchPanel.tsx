@@ -1,5 +1,10 @@
+'use client'
+import { useState } from 'react'
 import PanelHeader from '@/components/ui/PanelHeader'
 import Badge from '@/components/ui/Badge'
+import SlideOver from '@/components/ui/SlideOver'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
+import FormField, { FieldInput, FieldSelect } from '@/components/ui/FormField'
 import type { Chapter, MerchItem, BadgeVariant } from '@/lib/types'
 
 const vipKit: { item: string; badge: BadgeVariant; label: string }[] = [
@@ -29,21 +34,29 @@ const CARD: React.CSSProperties = {
   transition: 'border-color .2s',
 }
 
-function ItemRows({ items, icon }: { items: MerchItem[]; icon: string }) {
+function ItemRows({ items, icon, onEdit, onDelete }: { items: MerchItem[]; icon: string; onEdit: (item: MerchItem) => void; onDelete: (id: string) => void }) {
+  const [hoverId, setHoverId] = useState<string | null>(null)
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
       {items.map(item => {
         const b = itemBadge(item.status)
         return (
-          <div key={item.id} style={CARD}
-            onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(6,182,212,0.3)')}
-            onMouseLeave={e => (e.currentTarget.style.borderColor = '#1e293b')}>
+          <div
+            key={item.id}
+            style={{ ...CARD, gridTemplateColumns: '28px 1fr auto auto' }}
+            onMouseEnter={e => { (e.currentTarget.style.borderColor = 'rgba(6,182,212,0.3)'); setHoverId(item.id) }}
+            onMouseLeave={e => { (e.currentTarget.style.borderColor = '#1e293b'); setHoverId(null) }}
+          >
             <span style={{ fontSize: '14px', textAlign: 'center' }}>{icon}</span>
             <div>
               <div style={{ fontSize: '12px', fontWeight: 600, color: '#cfd5dd', marginBottom: '2px' }}>{item.name}</div>
               <div style={{ fontSize: '10px', color: '#64748b' }}>{item.distribution} · <span style={{ color: '#06b6d4', fontWeight: 700 }}>×{item.quantity}</span></div>
             </div>
             <Badge variant={b.variant}>{b.label}</Badge>
+            <div style={{ display: 'flex', gap: '4px', opacity: hoverId === item.id ? 1 : 0, transition: 'opacity .15s' }}>
+              <button onClick={() => onEdit(item)}   style={{ padding: '3px 7px', borderRadius: '6px', background: 'rgba(6,182,212,0.08)',  border: '1px solid rgba(6,182,212,0.25)',  color: '#06b6d4', fontSize: '10px', cursor: 'pointer' }}>✎</button>
+              <button onClick={() => onDelete(item.id)} style={{ padding: '3px 7px', borderRadius: '6px', background: 'rgba(225,29,72,0.08)', border: '1px solid rgba(225,29,72,0.25)', color: '#e11d48', fontSize: '10px', cursor: 'pointer' }}>✕</button>
+            </div>
           </div>
         )
       })}
@@ -51,13 +64,53 @@ function ItemRows({ items, icon }: { items: MerchItem[]; icon: string }) {
   )
 }
 
-export default function MerchPanel({ merch_items, chapters }: { merch_items: MerchItem[]; chapters: Chapter[] }) {
+const BLANK = { name: '', quantity: '1', distribution: '', status: 'pending', category: 'jcr' }
+
+export default function MerchPanel({ merch_items, chapters, onRefresh }: { merch_items: MerchItem[]; chapters: Chapter[]; onRefresh: () => Promise<void> }) {
+  const [slideOpen, setSlideOpen] = useState(false)
+  const [editItem, setEditItem] = useState<MerchItem | null>(null)
+  const [form, setForm] = useState(BLANK)
+  const [saving, setSaving] = useState(false)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
+
   const jcr    = merch_items.filter(m => m.category === 'jcr')
   const lazada = merch_items.filter(m => m.category === 'lazada')
   const shopee = merch_items.filter(m => m.category === 'shopee')
 
   const received = chapters.filter(c => c.merch_status.startsWith('✓')).length
   const pending  = chapters.length - received
+
+  function openAdd(category: string) {
+    setEditItem(null)
+    setForm({ ...BLANK, category })
+    setSlideOpen(true)
+  }
+
+  function openEdit(item: MerchItem) {
+    setEditItem(item)
+    setForm({ name: item.name, quantity: String(item.quantity), distribution: item.distribution, status: item.status, category: item.category })
+    setSlideOpen(true)
+  }
+
+  async function save() {
+    setSaving(true)
+    if (editItem) {
+      await fetch('/api/merch-items', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: editItem.id, ...form }) })
+    } else {
+      await fetch('/api/merch-items', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
+    }
+    await onRefresh()
+    setSaving(false)
+    setSlideOpen(false)
+  }
+
+  async function deleteItem(id: string) {
+    await fetch('/api/merch-items', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })
+    onRefresh()
+  }
+
+  const f = (field: keyof typeof BLANK) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+    setForm(prev => ({ ...prev, [field]: e.target.value }))
 
   return (
     <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
@@ -129,24 +182,33 @@ export default function MerchPanel({ merch_items, chapters }: { merch_items: Mer
 
       {/* JCR Orders */}
       <div>
-        <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#64748b', marginBottom: '12px' }}>
-          JCR Order <span style={{ color: '#14b8a6', marginLeft: '6px' }}>✓ Received — Invoice #0729 · Mar 24</span>
-        </p>
-        <ItemRows items={jcr} icon="📦" />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+          <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#64748b', margin: 0 }}>
+            JCR Order <span style={{ color: '#14b8a6', marginLeft: '6px' }}>✓ Received — Invoice #0729 · Mar 24</span>
+          </p>
+          <button onClick={() => openAdd('jcr')} style={{ padding: '3px 10px', borderRadius: '8px', background: 'rgba(6,182,212,0.06)', border: '1px solid rgba(6,182,212,0.2)', color: '#06b6d4', fontSize: '10px', fontWeight: 700, cursor: 'pointer' }}>+ Add</button>
+        </div>
+        <ItemRows items={jcr} icon="📦" onEdit={openEdit} onDelete={id => setDeleteId(id)} />
       </div>
 
       {/* Lazada + Shopee */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
         <div>
-          <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#64748b', marginBottom: '12px' }}>Lazada Orders</p>
-          <ItemRows items={lazada} icon="🛒" />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+            <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#64748b', margin: 0 }}>Lazada Orders</p>
+            <button onClick={() => openAdd('lazada')} style={{ padding: '3px 10px', borderRadius: '8px', background: 'rgba(6,182,212,0.06)', border: '1px solid rgba(6,182,212,0.2)', color: '#06b6d4', fontSize: '10px', fontWeight: 700, cursor: 'pointer' }}>+ Add</button>
+          </div>
+          <ItemRows items={lazada} icon="🛒" onEdit={openEdit} onDelete={id => setDeleteId(id)} />
           <div style={{ marginTop: '8px', padding: '10px 14px', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '10px', fontSize: '10px', color: '#64748b' }}>
             📝 Light pink polo (100 pcs) — CANCELLED. Replaced with SHEisDEVCON shirts.
           </div>
         </div>
         <div>
-          <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#64748b', marginBottom: '12px' }}>Shopee — Umbrellas</p>
-          <ItemRows items={shopee} icon="☂️" />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+            <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#64748b', margin: 0 }}>Shopee — Umbrellas</p>
+            <button onClick={() => openAdd('shopee')} style={{ padding: '3px 10px', borderRadius: '8px', background: 'rgba(6,182,212,0.06)', border: '1px solid rgba(6,182,212,0.2)', color: '#06b6d4', fontSize: '10px', fontWeight: 700, cursor: 'pointer' }}>+ Add</button>
+          </div>
+          <ItemRows items={shopee} icon="☂️" onEdit={openEdit} onDelete={id => setDeleteId(id)} />
           <div style={{ marginTop: '8px', padding: '12px 16px', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <div style={{ fontSize: '22px', fontWeight: 800, color: '#06b6d4', lineHeight: 1 }}>70</div>
@@ -156,6 +218,44 @@ export default function MerchPanel({ merch_items, chapters }: { merch_items: Mer
           </div>
         </div>
       </div>
+
+      {/* Add / Edit slide-over */}
+      <SlideOver open={slideOpen} onClose={() => setSlideOpen(false)} title={editItem ? 'Edit Item' : 'Add Item'}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <FormField label="Name"><FieldInput placeholder="Item name" value={form.name} onChange={f('name')} /></FormField>
+          <FormField label="Quantity"><FieldInput type="number" min="0" value={form.quantity} onChange={f('quantity')} /></FormField>
+          <FormField label="Distribution / Notes"><FieldInput placeholder="e.g. Per chapter" value={form.distribution} onChange={f('distribution')} /></FormField>
+          <FormField label="Category">
+            <FieldSelect value={form.category} onChange={f('category')}>
+              <option value="jcr">JCR</option>
+              <option value="lazada">Lazada</option>
+              <option value="shopee">Shopee</option>
+            </FieldSelect>
+          </FormField>
+          <FormField label="Status">
+            <FieldSelect value={form.status} onChange={f('status')}>
+              <option value="pending">Pending</option>
+              <option value="confirm">Confirm Received</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="received">Received</option>
+            </FieldSelect>
+          </FormField>
+          <button
+            onClick={save}
+            disabled={saving || !form.name.trim()}
+            style={{ padding: '10px', borderRadius: '10px', background: saving || !form.name.trim() ? '#1e293b' : 'linear-gradient(135deg,#06b6d4,#14b8a6)', border: 'none', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: saving ? 'wait' : 'pointer', marginTop: '8px' }}
+          >
+            {saving ? 'Saving…' : editItem ? 'Save Changes' : 'Add Item'}
+          </button>
+        </div>
+      </SlideOver>
+
+      <ConfirmDialog
+        open={deleteId !== null}
+        onClose={() => setDeleteId(null)}
+        onConfirm={() => deleteId && deleteItem(deleteId)}
+        message="Delete this item? This cannot be undone."
+      />
     </div>
   )
 }

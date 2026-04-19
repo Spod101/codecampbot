@@ -1,7 +1,11 @@
 'use client'
+import { useState, useEffect } from 'react'
 import Badge from '@/components/ui/Badge'
 import ProgressBar from '@/components/ui/ProgressBar'
-import type { Chapter, BadgeVariant } from '@/lib/types'
+import SlideOver from '@/components/ui/SlideOver'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
+import FormField, { FieldInput, FieldTextarea } from '@/components/ui/FormField'
+import type { Chapter, ChapterTask, BadgeVariant } from '@/lib/types'
 
 /* ── accent colours ─────────────────────────────────────────────────────── */
 const accentOf = (c: Chapter) =>
@@ -139,17 +143,79 @@ function CheckRow({ item }: { item: CheckItem }) {
   )
 }
 
-/* ── Main component ──────────────────────────────────────────────────────── */
-interface Props { chapterId: string; chapters: Chapter[]; onBack: () => void }
+const TASK_STATUS_CYCLE: Record<string, string> = {
+  pending: 'done', done: 'urgent', urgent: 'pending',
+}
+const TASK_STATUS_LABEL: Record<string, string> = {
+  pending: '→ Pending', done: '✓ Done', urgent: '🔴 Urgent',
+}
+const TASK_STATUS_COLOR: Record<string, string> = {
+  pending: '#475569', done: '#14b8a6', urgent: '#e11d48',
+}
 
-export default function ChapterDetailPanel({ chapterId, chapters, onBack }: Props) {
+/* ── Main component ──────────────────────────────────────────────────────── */
+interface Props { chapterId: string; chapters: Chapter[]; onBack: () => void; onRefresh?: () => Promise<void> }
+
+export default function ChapterDetailPanel({ chapterId, chapters, onBack, onRefresh }: Props) {
   const chapter = chapters.find(c => c.id === chapterId)
+
+  const [todos, setTodos] = useState<ChapterTask[]>(() => chapter?.todos ?? [])
+  const [addOpen, setAddOpen] = useState(false)
+  const [addOwner, setAddOwner] = useState('')
+  const [addDesc, setAddDesc] = useState('')
+  const [addLoading, setAddLoading] = useState(false)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [hoverId, setHoverId] = useState<string | null>(null)
+
+  // Sync todos when parent refreshes
+  useEffect(() => {
+    if (chapter) setTodos(chapter.todos)
+  }, [chapter?.todos])
+
   if (!chapter) return null
 
   const accent  = accentOf(chapter)
   const sb      = statusBadge[chapter.status]
   const checklist = CHECKLIST[chapterId] ?? []
   const relDay  = relativeDay(chapter.date_iso)
+
+  async function addTask() {
+    if (!addOwner.trim() || !addDesc.trim()) return
+    setAddLoading(true)
+    const res = await fetch('/api/chapter-tasks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chapter_id: chapterId, owner: addOwner.trim(), description: addDesc.trim() }),
+    })
+    if (res.ok) {
+      const { data } = await res.json()
+      setTodos(prev => [...prev, data])
+      setAddOwner(''); setAddDesc(''); setAddOpen(false)
+      onRefresh?.()
+    }
+    setAddLoading(false)
+  }
+
+  async function cycleStatus(task: ChapterTask) {
+    const next = TASK_STATUS_CYCLE[task.status] ?? 'pending'
+    setTodos(prev => prev.map(t => t.id === task.id ? { ...t, status: next as ChapterTask['status'] } : t))
+    const res = await fetch('/api/chapter-tasks', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: task.id, status: next }),
+    })
+    if (!res.ok) { setTodos(prev => prev.map(t => t.id === task.id ? task : t)); onRefresh?.() }
+  }
+
+  async function deleteTask(id: string) {
+    setTodos(prev => prev.filter(t => t.id !== id))
+    await fetch('/api/chapter-tasks', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    })
+    onRefresh?.()
+  }
 
   /* Liquidation status — infer from checklist or todos */
   const liqItem = checklist.find(i => i.tCode === 'T+7')
@@ -286,37 +352,103 @@ export default function ChapterDetailPanel({ chapterId, chapters, onBack }: Prop
       )}
 
       {/* ── Open Tasks (from DB todos) ───────────────────────────────────── */}
-      {chapter.todos.length > 0 && (
-        <div>
-          <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#64748b', marginBottom: '14px' }}>Open Tasks</p>
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+          <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#64748b', margin: 0 }}>
+            Open Tasks <span style={{ color: '#334155', marginLeft: '6px' }}>({todos.length})</span>
+          </p>
+          <button
+            onClick={() => setAddOpen(true)}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '5px 12px', borderRadius: '8px', background: 'rgba(6,182,212,0.08)', border: '1px solid rgba(6,182,212,0.25)', color: '#06b6d4', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}
+          >
+            + Add Task
+          </button>
+        </div>
+        {todos.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '32px', color: '#334155', fontSize: '12px', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px' }}>
+            No tasks yet. Click + Add Task to create one.
+          </div>
+        ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            {chapter.todos.map(t => (
-              <div
-                key={t.id}
-                style={{
-                  display: 'grid', gridTemplateColumns: '28px 1fr auto', gap: '14px',
-                  alignItems: 'flex-start', padding: '13px 18px',
-                  background: t.status === 'urgent' ? 'rgba(225,29,72,0.05)' : '#0f172a',
-                  border: `1px solid ${t.status === 'urgent' ? 'rgba(225,29,72,0.25)' : '#1e293b'}`,
-                  borderRadius: '12px', transition: 'border-color .2s',
-                }}
-                onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(6,182,212,0.35)')}
-                onMouseLeave={e => (e.currentTarget.style.borderColor = t.status === 'urgent' ? 'rgba(225,29,72,0.25)' : '#1e293b')}
-              >
-                <span style={{ fontSize: '12px', paddingTop: '1px' }}>{t.status === 'urgent' ? '🔴' : '→'}</span>
-                <div>
-                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#cfd5dd', marginBottom: '2px' }}>
-                    <span style={{ color: accent }}>{t.owner}:</span> {t.description}
+            {todos.map(t => {
+              const statusColor = TASK_STATUS_COLOR[t.status] ?? '#475569'
+              return (
+                <div
+                  key={t.id}
+                  onMouseEnter={() => setHoverId(t.id)}
+                  onMouseLeave={() => setHoverId(null)}
+                  style={{
+                    display: 'grid', gridTemplateColumns: '1fr auto', gap: '10px',
+                    alignItems: 'center', padding: '12px 14px',
+                    background: t.status === 'urgent' ? 'rgba(225,29,72,0.05)' : '#0f172a',
+                    border: `1px solid ${t.status === 'urgent' ? 'rgba(225,29,72,0.25)' : '#1e293b'}`,
+                    borderRadius: '12px', transition: 'border-color .2s',
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: '12px', fontWeight: 600, color: '#cfd5dd', marginBottom: '2px' }}>
+                      <span style={{ color: accent }}>{t.owner}:</span> {t.description}
+                    </div>
+                    <span style={{ fontSize: '9px', fontWeight: 700, color: statusColor, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      {TASK_STATUS_LABEL[t.status]}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '6px', opacity: hoverId === t.id ? 1 : 0, transition: 'opacity .15s' }}>
+                    <button
+                      onClick={() => cycleStatus(t)}
+                      title={`Cycle status (currently ${t.status})`}
+                      style={{ padding: '4px 8px', borderRadius: '6px', background: `${statusColor}18`, border: `1px solid ${statusColor}40`, color: statusColor, fontSize: '10px', fontWeight: 700, cursor: 'pointer' }}
+                    >
+                      ↻
+                    </button>
+                    <button
+                      onClick={() => setDeleteId(t.id)}
+                      style={{ padding: '4px 8px', borderRadius: '6px', background: 'rgba(225,29,72,0.08)', border: '1px solid rgba(225,29,72,0.25)', color: '#e11d48', fontSize: '10px', cursor: 'pointer' }}
+                    >
+                      ✕
+                    </button>
                   </div>
                 </div>
-                {t.status === 'urgent' && (
-                  <span style={{ fontSize: '8px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', padding: '3px 8px', borderRadius: '6px', background: 'rgba(225,29,72,0.12)', color: '#e11d48', border: '1px solid rgba(225,29,72,0.3)', whiteSpace: 'nowrap' }}>URGENT</span>
-                )}
-              </div>
-            ))}
+              )
+            })}
           </div>
+        )}
+      </div>
+
+      {/* Add task slide-over */}
+      <SlideOver open={addOpen} onClose={() => setAddOpen(false)} title="Add Task">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <FormField label="Owner">
+            <FieldInput
+              placeholder="e.g. Jedd"
+              value={addOwner}
+              onChange={e => setAddOwner(e.target.value)}
+            />
+          </FormField>
+          <FormField label="Description">
+            <FieldTextarea
+              placeholder="What needs to be done?"
+              value={addDesc}
+              onChange={e => setAddDesc(e.target.value)}
+            />
+          </FormField>
+          <button
+            onClick={addTask}
+            disabled={addLoading || !addOwner.trim() || !addDesc.trim()}
+            style={{ padding: '10px', borderRadius: '10px', background: addLoading || !addOwner.trim() || !addDesc.trim() ? '#1e293b' : 'linear-gradient(135deg,#06b6d4,#14b8a6)', border: 'none', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: addLoading ? 'wait' : 'pointer' }}
+          >
+            {addLoading ? 'Adding…' : 'Add Task'}
+          </button>
         </div>
-      )}
+      </SlideOver>
+
+      {/* Confirm delete */}
+      <ConfirmDialog
+        open={deleteId !== null}
+        onClose={() => setDeleteId(null)}
+        onConfirm={() => deleteId && deleteTask(deleteId)}
+        message="Delete this task? This cannot be undone."
+      />
 
       {/* ── Pilot Notes ──────────────────────────────────────────────────── */}
       <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '14px', padding: '20px 22px' }}>
