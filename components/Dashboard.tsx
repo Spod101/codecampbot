@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { fetchChapters, fetchKpis, fetchRisks, fetchContacts, fetchMerchItems, fetchLinks } from '@/lib/supabase/queries'
 import type { Chapter, Kpi, Risk, Contact, MerchItem, ResourceLink } from '@/lib/types'
 import KpiPanel from '@/components/panels/KpiPanel'
@@ -16,6 +16,12 @@ import ContentPanel from '@/components/panels/ContentPanel'
 import SettingsPanel from '@/components/panels/SettingsPanel'
 
 type TabId = 'overview' | 'kpi' | 'milestones' | 'chapters' | 'risks' | 'merch' | 'links' | 'contacts' | 'content' | 'settings'
+
+const TAB_IDS: TabId[] = ['overview', 'kpi', 'milestones', 'chapters', 'risks', 'merch', 'links', 'contacts', 'content', 'settings']
+
+function getTabFromQuery(tab: string | null): TabId {
+  return TAB_IDS.includes((tab ?? '') as TabId) ? (tab as TabId) : 'overview'
+}
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const C = {
@@ -517,7 +523,10 @@ interface DashboardProps {
 
 export default function Dashboard({ initialChapterId }: DashboardProps) {
   const router = useRouter()
-  const [activeTab,    setActiveTab]    = useState<TabId>('overview')
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+
+  const [activeTab,    setActiveTab]    = useState<TabId>(() => getTabFromQuery(searchParams.get('tab')))
   const [calendarOpen, setCalendarOpen] = useState(false)
 
   const [chapters,   setChapters]   = useState<Chapter[]>([])
@@ -539,16 +548,32 @@ export default function Dashboard({ initialChapterId }: DashboardProps) {
 
   useEffect(() => { refresh() }, [refresh])
 
+  useEffect(() => {
+    if (initialChapterId) return
+    setActiveTab(getTabFromQuery(searchParams.get('tab')))
+  }, [initialChapterId, searchParams])
+
+  const updateTabUrl = useCallback((tab: TabId) => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (tab === 'overview') params.delete('tab')
+    else params.set('tab', tab)
+
+    const query = params.toString()
+    const basePath = pathname === '/' ? '/' : pathname
+    router.replace(query ? `${basePath}?${query}` : basePath, { scroll: false })
+  }, [pathname, router, searchParams])
+
   function showChapter(id: string) {
     router.push('/chapters/' + id)
   }
 
   function switchTab(tab: TabId) {
     if (initialChapterId) {
-      router.push('/')
+      router.push(tab === 'overview' ? '/' : `/?tab=${tab}`)
       return
     }
     setActiveTab(tab)
+    updateTabUrl(tab)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
