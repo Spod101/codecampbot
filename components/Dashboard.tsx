@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import Image from 'next/image'
 import { fetchChapters, fetchKpis, fetchRisks, fetchContacts, fetchMerchItems, fetchLinks } from '@/lib/supabase/queries'
+import { createClient as createSupabaseClient } from '@/lib/supabase/client'
 import type { Chapter, Kpi, Risk, Contact, MerchItem, ResourceLink } from '@/lib/types'
 import KpiPanel from '@/components/panels/KpiPanel'
 import ChaptersPanel from '@/components/panels/ChaptersPanel'
@@ -373,12 +375,13 @@ function BentoSection({ kpis, risks, chapters, onSwitch }: { kpis: Kpi[]; risks:
 }
 
 // ── Sidebar ───────────────────────────────────────────────────────────────────
-function Sidebar({ activeTab, activeChapterId, chapters, onSwitch, onShowChapter }: {
+function Sidebar({ activeTab, activeChapterId, chapters, onSwitch, onShowChapter, onLogout }: {
   activeTab: TabId
   activeChapterId: string | null
   chapters: Chapter[]
   onSwitch: (t: TabId) => void
   onShowChapter: (id: string) => void
+  onLogout: () => void
 }) {
   return (
     <aside style={{ position:'fixed', left:0, top:0, bottom:0, width:'280px', background:C.surface, borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', zIndex:100, overflowY:'auto' }}>
@@ -386,7 +389,9 @@ function Sidebar({ activeTab, activeChapterId, chapters, onSwitch, onShowChapter
       {/* Logo */}
       <div style={{ padding:'24px 20px', borderBottom:`1px solid ${C.border}`, flexShrink:0 }}>
         <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
-          <div style={{ width:'40px', height:'40px', borderRadius:'12px', background:'linear-gradient(135deg,#06b6d4,#14b8a6)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'20px', flexShrink:0 }}>⚡</div>
+          <div style={{ width:'40px', height:'40px', borderRadius:'12px', background:'rgba(6,182,212,0.08)', border:'1px solid rgba(6,182,212,0.25)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+            <Image src="/sui-logo.png" alt="Sui logo" width={24} height={24} unoptimized />
+          </div>
           <div>
             <div style={{ fontSize:'15px', fontWeight:700, color:C.text, lineHeight:1.2 }}>CodeCamp HQ</div>
             <div style={{ fontSize:'11px', color:C.muted, marginTop:'2px' }}>Sui × DEVCON</div>
@@ -439,18 +444,14 @@ function Sidebar({ activeTab, activeChapterId, chapters, onSwitch, onShowChapter
         )}
       </div>
 
-      {/* Bottom gradient widget */}
+      {/* Bottom actions */}
       <div style={{ padding:'16px', borderTop:`1px solid ${C.border}`, flexShrink:0 }}>
-        <div style={{ background:'linear-gradient(135deg,#06b6d4,#14b8a6)', borderRadius:'14px', padding:'16px' }}>
-          <div style={{ fontSize:'12px', fontWeight:700, color:'#fff', marginBottom:'3px' }}>Q2 2026 Report</div>
-          <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.7)', marginBottom:'12px' }}>Due June 30 → Sui Foundation</div>
-          <button
-            onClick={() => onSwitch('milestones')}
-            style={{ background:'rgba(255,255,255,0.2)', color:'#fff', border:'none', borderRadius:'8px', padding:'6px 12px', fontSize:'11px', fontWeight:700, cursor:'pointer', transition:'all .2s' }}
-          >
-            View Timeline
-          </button>
-        </div>
+        <button
+          onClick={onLogout}
+          style={{ width:'100%', display:'inline-flex', alignItems:'center', justifyContent:'center', background:'rgba(225,29,72,0.08)', border:'1px solid rgba(225,29,72,0.25)', borderRadius:'10px', padding:'9px 12px', color:'#e11d48', fontSize:'12px', fontWeight:700, cursor:'pointer', transition:'all .2s' }}
+        >
+          Logout
+        </button>
       </div>
     </aside>
   )
@@ -494,7 +495,6 @@ function TopHeader({ calendarOpen, onToggleCalendar }: { calendarOpen: boolean; 
 
       {/* Right controls */}
       <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
-
         {/* Calendar trigger */}
         <button
           onClick={onToggleCalendar}
@@ -563,6 +563,13 @@ export default function Dashboard({ initialChapterId }: DashboardProps) {
     router.push('/chapters/' + id)
   }
 
+  async function logout() {
+    const supabase = createSupabaseClient()
+    await supabase.auth.signOut()
+    router.replace('/auth/login')
+    router.refresh()
+  }
+
   function switchTab(tab: TabId) {
     if (initialChapterId) {
       router.push(tab === 'overview' ? '/' : `/?tab=${tab}`)
@@ -583,6 +590,7 @@ export default function Dashboard({ initialChapterId }: DashboardProps) {
         chapters={chapters}
         onSwitch={switchTab}
         onShowChapter={showChapter}
+        onLogout={logout}
       />
 
       {/* Main content */}
