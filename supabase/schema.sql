@@ -171,7 +171,7 @@ create policy "Public read merch_items"    on merch_items    for select using (t
 create policy "Public read resource_links" on resource_links for select using (true);
 
 -- Allow authenticated users to insert/update/delete
-create policy "Auth write bot_settings"   on bot_settings   for all using (auth.role() = 'authenticated');
+create policy "App write bot_settings"    on bot_settings   for all using (auth.role() in ('anon', 'authenticated')) with check (auth.role() in ('anon', 'authenticated'));
 create policy "Auth write chapters"       on chapters       for all using (auth.role() = 'authenticated');
 create policy "Auth write chapter_tasks"  on chapter_tasks  for all using (auth.role() = 'authenticated');
 create policy "Auth write kpis"           on kpis           for all using (auth.role() = 'authenticated');

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
 function db() {
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY is not configured')
+  }
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -35,7 +38,13 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
-  const supabase = db()
+
+  let supabase
+  try {
+    supabase = db()
+  } catch (error) {
+    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : 'Database client misconfigured' }, { status: 500 })
+  }
 
   const upserts: { key: string; value: string; updated_at: string }[] = []
   const now = new Date().toISOString()
