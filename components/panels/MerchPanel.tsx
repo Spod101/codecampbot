@@ -52,7 +52,7 @@ function ItemRows({ items, icon, onEdit, onDelete }: { items: MerchItem[]; icon:
               <div style={{ fontSize: '12px', fontWeight: 600, color: '#cfd5dd', marginBottom: '2px' }}>{item.name}</div>
               <div style={{ fontSize: '10px', color: '#64748b' }}>{item.distribution} · <span style={{ color: '#06b6d4', fontWeight: 700 }}>×{item.quantity}</span></div>
             </div>
-            <Badge variant={b.variant}>{b.label}</Badge>
+            <Badge variant={b.variant} size="sm">{b.label}</Badge>
             <div style={{ display: 'flex', gap: '4px', opacity: hoverId === item.id ? 1 : 0, transition: 'opacity .15s' }}>
               <button onClick={() => onEdit(item)}   style={{ padding: '3px 7px', borderRadius: '6px', background: 'rgba(6,182,212,0.08)',  border: '1px solid rgba(6,182,212,0.25)',  color: '#06b6d4', fontSize: '10px', cursor: 'pointer' }}>✎</button>
               <button onClick={() => onDelete(item.id)} style={{ padding: '3px 7px', borderRadius: '6px', background: 'rgba(225,29,72,0.08)', border: '1px solid rgba(225,29,72,0.25)', color: '#e11d48', fontSize: '10px', cursor: 'pointer' }}>✕</button>
@@ -154,7 +154,7 @@ export default function MerchPanel({ merch_items, chapters, onRefresh }: { merch
                   onMouseLeave={e => (e.currentTarget.style.borderColor = '#1e293b')}>
                   <span style={{ fontSize: '11px', color: '#475569', fontFamily: 'monospace', fontWeight: 700 }}>{c.number}</span>
                   <span style={{ fontSize: '12px', fontWeight: 600, color: '#cfd5dd' }}>{c.name}</span>
-                  <Badge variant={m.variant}>{m.label}</Badge>
+                  <Badge variant={m.variant} size="sm">{m.label}</Badge>
                 </div>
               )
             })}
@@ -170,7 +170,7 @@ export default function MerchPanel({ merch_items, chapters, onRefresh }: { merch
                 onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(6,182,212,0.3)')}
                 onMouseLeave={e => (e.currentTarget.style.borderColor = '#1e293b')}>
                 <span style={{ fontSize: '11px', color: '#8899aa' }}>{v.item}</span>
-                <Badge variant={v.badge}>{v.label}</Badge>
+                <Badge variant={v.badge} size="sm">{v.label}</Badge>
               </div>
             ))}
           </div>

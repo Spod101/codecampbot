@@ -8,12 +8,12 @@ import { liveCountdown } from '@/lib/utils'
 import type { Chapter, Kpi, BadgeVariant } from '@/lib/types'
 
 const statusBadge: Record<string, { variant: BadgeVariant; label: string }> = {
-  completed:     { variant: 'done',    label: '✓ Done'           },
-  rescheduling:  { variant: 'warn',    label: '⚠ Rescheduling'   },
-  in_progress:   { variant: 'pending', label: '🔄 In Progress'   },
-  pencil_booked: { variant: 'warn',    label: '📌 Pencil-booked'  },
+  completed:     { variant: 'done',    label: 'Done'             },
+  rescheduling:  { variant: 'warn',    label: 'Rescheduling'     },
+  in_progress:   { variant: 'pending', label: 'Active'           },
+  pencil_booked: { variant: 'warn',    label: 'Pencil Booked'    },
   tbc:           { variant: 'tbc',     label: 'TBC'              },
-  activating:    { variant: 'warn',    label: '⚠ Activating'     },
+  activating:    { variant: 'warn',    label: 'Activating'       },
 }
 
 const dotColor: Record<string, string> = {
@@ -133,7 +133,7 @@ export default function DsuPanel({ chapters, kpis, onShowChapter }: Props) {
                     <div className="text-[13px] font-extrabold text-[#cfd5dd]">{chapter.city}</div>
                     <div className="text-[10px] text-[#64748b] mt-0.5">{chapter.venue.split(',')[0]} · Lead: {chapter.lead_name.split('&')[0].trim()}</div>
                   </div>
-                  <Badge variant={b.variant}>{b.label}</Badge>
+                  <Badge variant={b.variant} size="sm">{b.label}</Badge>
                 </div>
                 <div className="text-[11px] font-semibold mb-1.5" style={{ color: chapterDateColor[chapter.status] }}>{chapter.date_text}</div>
                 <ProgressBar percent={chapter.progress_percent} color={chapter.color === 'yellow' ? 'yellow' : chapter.color === 'teal' ? 'teal' : chapter.color === 'purple' ? 'purple' : 'default'} />

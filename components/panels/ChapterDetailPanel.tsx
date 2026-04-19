@@ -12,12 +12,12 @@ const accentOf = (c: Chapter) =>
   c.color === 'teal' ? '#14b8a6' : c.color === 'yellow' ? '#f59e0b' : c.color === 'purple' ? '#a78bfa' : '#06b6d4'
 
 const statusBadge: Record<string, { variant: BadgeVariant; label: string }> = {
-  completed:     { variant: 'done',    label: '✓ COMPLETED'     },
-  rescheduling:  { variant: 'warn',    label: '⚠ RESCHEDULING'  },
-  in_progress:   { variant: 'pending', label: '🔄 IN PROGRESS'  },
-  pencil_booked: { variant: 'warn',    label: '📌 PENCIL-BOOKED' },
+  completed:     { variant: 'done',    label: 'Completed'       },
+  rescheduling:  { variant: 'warn',    label: 'Rescheduling'    },
+  in_progress:   { variant: 'pending', label: 'Active'          },
+  pencil_booked: { variant: 'warn',    label: 'Pencil Booked'   },
   tbc:           { variant: 'tbc',     label: 'TBC / AT RISK'   },
-  activating:    { variant: 'warn',    label: '⚠ ACTIVATING'    },
+  activating:    { variant: 'warn',    label: 'Activating'      },
 }
 
 /* ── countdown checklist data ───────────────────────────────────────────── */
@@ -257,7 +257,7 @@ export default function ChapterDetailPanel({ chapterId, chapters, onBack, onRefr
 
         {/* Badge row */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px', flexWrap: 'wrap' }}>
-          <Badge variant={sb.variant}>{sb.label}</Badge>
+          <Badge variant={sb.variant} size="sm">{sb.label}</Badge>
           <span style={{ fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 10px', borderRadius: '8px', background: `${accent}14`, border: `1px solid ${accent}35`, color: accent }}>
             CHAPTER {chapter.number} · {chapter.region}
           </span>

@@ -7,12 +7,12 @@ import { liveCountdown } from '@/lib/utils'
 import type { Chapter, Kpi, BadgeVariant } from '@/lib/types'
 
 const statusBadge: Record<string, { variant: BadgeVariant; label: string }> = {
-  completed:     { variant: 'done',    label: '✓ Done'          },
-  rescheduling:  { variant: 'warn',    label: '⚠ Rescheduling'  },
-  in_progress:   { variant: 'pending', label: '🔄 Active'       },
-  pencil_booked: { variant: 'warn',    label: '📌 Pencil-booked' },
+  completed:     { variant: 'done',    label: 'Done'            },
+  rescheduling:  { variant: 'warn',    label: 'Rescheduling'    },
+  in_progress:   { variant: 'pending', label: 'Active'          },
+  pencil_booked: { variant: 'warn',    label: 'Pencil Booked'   },
   tbc:           { variant: 'tbc',     label: 'TBC'             },
-  activating:    { variant: 'warn',    label: '⚠ Activating'    },
+  activating:    { variant: 'warn',    label: 'Activating'      },
 }
 
 const accentOf = (c: Chapter) =>
@@ -117,7 +117,7 @@ export default function KpiPanel({ kpis, chapters, setKpis }: { kpis: Kpi[]; cha
                   <div style={{ fontSize: '9px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: '2px' }}>target pax</div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
-                  <Badge variant={b.variant}>{b.label}</Badge>
+                  <Badge variant={b.variant} size="sm">{b.label}</Badge>
                   <span style={{ fontSize: '9px', color: '#475569' }}>{liveCountdown(c.date_iso)}</span>
                 </div>
               </div>

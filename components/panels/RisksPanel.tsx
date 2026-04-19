@@ -167,7 +167,7 @@ export default function RisksPanel({ risks, setRisks, onRefresh }: Props) {
                   <div style={{ fontSize: '13px', fontWeight: 600, color: resolved ? '#475569' : '#cfd5dd', marginBottom: '4px', textDecoration: resolved ? 'line-through' : 'none' }}>{risk.title}</div>
                   <div style={{ fontSize: '11px', color: '#64748b', lineHeight: 1.6, marginBottom: '8px' }}>{risk.description}</div>
                   <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                    <Badge variant={tv}>{risk.chapter_tag}</Badge>
+                    <Badge variant={tv} size="sm">{risk.chapter_tag}</Badge>
                     {resolved && <span style={{ fontSize: '9px', color: '#14b8a6', fontWeight: 700 }}>✓ RESOLVED</span>}
                   </div>
                 </div>

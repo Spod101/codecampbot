@@ -9,12 +9,12 @@ import { liveCountdown } from '@/lib/utils'
 import type { Chapter, BadgeVariant, ChapterStatus } from '@/lib/types'
 
 const statusBadge: Record<string, { variant: BadgeVariant; label: string }> = {
-  completed:     { variant: 'done',    label: '✓ Completed'     },
-  rescheduling:  { variant: 'warn',    label: '⚠ Rescheduling'  },
-  in_progress:   { variant: 'pending', label: '🔄 In Progress'  },
-  pencil_booked: { variant: 'warn',    label: '📌 Pencil-booked' },
+  completed:     { variant: 'done',    label: 'Completed'       },
+  rescheduling:  { variant: 'warn',    label: 'Rescheduling'    },
+  in_progress:   { variant: 'pending', label: 'Active'          },
+  pencil_booked: { variant: 'warn',    label: 'Pencil Booked'   },
   tbc:           { variant: 'tbc',     label: 'TBC / At Risk'   },
-  activating:    { variant: 'warn',    label: '⚠ Activating'    },
+  activating:    { variant: 'warn',    label: 'Activating'      },
 }
 
 function getMerchBadge(s: string): { variant: BadgeVariant; label: string } {
@@ -136,8 +136,8 @@ export default function ChaptersPanel({ chapters, onShowChapter, onRefresh }: { 
                   <div style={{ fontSize: '9px', color: '#475569', marginTop: '6px' }}>{liveCountdown(c.date_iso)}</div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '5px' }}>
-                  <Badge variant={b.variant}>{b.label}</Badge>
-                  <Badge variant={m.variant}>{m.label}</Badge>
+                  <Badge variant={b.variant} size="sm">{b.label}</Badge>
+                  <Badge variant={m.variant} size="sm">{m.label}</Badge>
                 </div>
                 <button
                   onClick={e => openEdit(e, c)}

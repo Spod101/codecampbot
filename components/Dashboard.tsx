@@ -56,6 +56,56 @@ function getCat(num: string | number) {
   return            { label: 'Startup',  color: C.teal,  bg: 'rgba(20,184,166,0.15)' }
 }
 
+function formatChapterStatus(status: string) {
+  return status
+    .split('_')
+    .filter(Boolean)
+    .map(token => token.charAt(0).toUpperCase() + token.slice(1))
+    .join(' ')
+}
+
+function getChapterStatusBadge(status: string) {
+  const key = status.toLowerCase()
+
+  if (key === 'completed') {
+    return {
+      label: 'Completed',
+      color: '#14b8a6',
+      bg: 'rgba(20,184,166,0.16)',
+      border: 'rgba(20,184,166,0.4)',
+      glow: '0 0 16px rgba(20,184,166,0.2)',
+    }
+  }
+
+  if (key === 'rescheduling' || key === 'tbc') {
+    return {
+      label: formatChapterStatus(status),
+      color: '#f59e0b',
+      bg: 'rgba(245,158,11,0.16)',
+      border: 'rgba(245,158,11,0.38)',
+      glow: '0 0 16px rgba(245,158,11,0.16)',
+    }
+  }
+
+  if (key === 'in_progress' || key === 'activating' || key === 'pencil_booked') {
+    return {
+      label: formatChapterStatus(status),
+      color: '#06b6d4',
+      bg: 'rgba(6,182,212,0.16)',
+      border: 'rgba(6,182,212,0.38)',
+      glow: '0 0 16px rgba(6,182,212,0.18)',
+    }
+  }
+
+  return {
+    label: formatChapterStatus(status),
+    color: C.dim,
+    bg: 'rgba(15,23,42,0.78)',
+    border: 'rgba(100,116,139,0.35)',
+    glow: 'none',
+  }
+}
+
 const NAV_SECTIONS = [
   {
     label: 'Overview',
@@ -215,6 +265,7 @@ function EventCard({ chapter, onSelect }: { chapter: Chapter; onSelect: (id: str
   const cat     = getCat(chapter.number)
   const grad    = CHAPTER_GRADIENTS[(parseInt(chapter.number) - 1) % CHAPTER_GRADIENTS.length]
   const avatarN = Math.min(3, Math.max(1, Math.floor(chapter.progress_percent / 30)))
+  const statusBadge = getChapterStatusBadge(chapter.status)
 
   return (
     <div
@@ -245,8 +296,9 @@ function EventCard({ chapter, onSelect }: { chapter: Chapter; onSelect: (id: str
           {cat.label}
         </div>
         {/* Status badge */}
-        <div style={{ position:'absolute', top:'12px', right:'12px', background:'rgba(15,23,42,0.8)', color:C.dim, padding:'3px 10px', borderRadius:'999px', fontSize:'10px', fontWeight:600, backdropFilter:'blur(8px)' }}>
-          {chapter.status.replace('_',' ')}
+        <div style={{ position:'absolute', top:'12px', right:'12px', display:'inline-flex', alignItems:'center', gap:'6px', background:statusBadge.bg, border:`1px solid ${statusBadge.border}`, boxShadow:statusBadge.glow, color:statusBadge.color, padding:'5px 11px', borderRadius:'999px', fontSize:'10px', fontWeight:700, letterSpacing:'0.04em', textTransform:'uppercase', backdropFilter:'blur(10px)' }}>
+          <span style={{ width:'7px', height:'7px', borderRadius:'50%', background:statusBadge.color, boxShadow:`0 0 8px ${statusBadge.color}` }} />
+          {statusBadge.label}
         </div>
       </div>
 
@@ -459,19 +511,30 @@ function Sidebar({ activeTab, activeChapterId, chapters, onSwitch, onShowChapter
 
 // ── Top Header ────────────────────────────────────────────────────────────────
 function TopHeader({ calendarOpen, onToggleCalendar }: { calendarOpen: boolean; onToggleCalendar: () => void }) {
-  const [now, setNow] = useState(() => new Date())
+  const [now, setNow] = useState<Date | null>(null)
 
   useEffect(() => {
+    setNow(new Date())
     const id = setInterval(() => setNow(new Date()), 1000)
     return () => clearInterval(id)
   }, [])
 
-  const q2DaysLeft = Math.ceil((Q2_DEADLINE.getTime() - now.getTime()) / 86_400_000)
-  const q2Label    = q2DaysLeft > 0 ? `${q2DaysLeft}d to Q2 End` : q2DaysLeft === 0 ? 'Q2 Ends Today' : 'Q2 Complete'
+  const q2DaysLeft = now ? Math.ceil((Q2_DEADLINE.getTime() - now.getTime()) / 86_400_000) : null
+  const q2Label = q2DaysLeft === null
+    ? 'Syncing...'
+    : q2DaysLeft > 0
+      ? `${q2DaysLeft}d to Q2 End`
+      : q2DaysLeft === 0
+        ? 'Q2 Ends Today'
+        : 'Q2 Complete'
 
-  const hh = String(now.getHours()).padStart(2, '0')
-  const mm = String(now.getMinutes()).padStart(2, '0')
-  const ss = String(now.getSeconds()).padStart(2, '0')
+  const hh = now ? String(now.getHours()).padStart(2, '0') : '--'
+  const mm = now ? String(now.getMinutes()).padStart(2, '0') : '--'
+  const ss = now ? String(now.getSeconds()).padStart(2, '0') : '--'
+  const dayLabel = now
+    ? `${DAY_FULL[now.getDay()].slice(0,3).toUpperCase()} ${now.getDate()} ${MONTH_SHORT[now.getMonth()]}`
+    : '--- -- ---'
+  const yearLabel = now ? String(now.getFullYear()) : '----'
 
   return (
     <header style={{ position:'sticky', top:0, zIndex:90, height:'80px', background:'rgba(2,6,23,0.95)', backdropFilter:'blur(16px)', borderBottom:`1px solid ${C.border}`, display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 32px', flexShrink:0 }}>
@@ -502,10 +565,10 @@ function TopHeader({ calendarOpen, onToggleCalendar }: { calendarOpen: boolean; 
         >
           <div style={{ lineHeight:1.3 }}>
             <div style={{ fontSize:'14px', fontWeight:700, color:C.teal, textTransform:'uppercase', letterSpacing:'0.06em' }}>
-              {DAY_FULL[now.getDay()].slice(0,3).toUpperCase()} {now.getDate()} {MONTH_SHORT[now.getMonth()]}
+              {dayLabel}
             </div>
             <div style={{ fontSize:'10px', color:C.muted, fontFamily:'monospace', letterSpacing:'0.05em', marginTop:'1px' }}>
-              {hh}:{mm}:{ss} · {now.getFullYear()}
+              {hh}:{mm}:{ss} · {yearLabel}
             </div>
           </div>
           <div style={{ marginLeft:'auto', width:'32px', height:'32px', borderRadius:'8px', background:'rgba(6,182,212,0.1)', border:'1px solid rgba(6,182,212,0.2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'15px' }}>
