@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 function db() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
+  return createAdminClient()
+}
+
+function normalizeDbError(message: string): string {
+  if (/row-level security policy/i.test(message) && /chapter[-_]tasks/i.test(message)) {
+    return `${message}. Check SUPABASE_SERVICE_ROLE_KEY: it must be the service_role key, not anon.`
+  }
+  return message
 }
 
 const CHAPTER_CODES: Record<string, string> = {
@@ -27,6 +31,13 @@ async function generateShortId(supabase: ReturnType<typeof db>, chapter_id: stri
 }
 
 export async function POST(req: NextRequest) {
+  let supabase
+  try {
+    supabase = db()
+  } catch (error) {
+    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : 'Database client misconfigured' }, { status: 500 })
+  }
+
   const body = await req.json()
   const { chapter_id, owner, description } = body
 
@@ -34,7 +45,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: 'chapter_id, owner, and description are required' }, { status: 400 })
   }
 
-  const supabase = db()
   const short_id = await generateShortId(supabase, chapter_id)
 
   const { data, error } = await supabase
@@ -43,11 +53,18 @@ export async function POST(req: NextRequest) {
     .select()
     .single()
 
-  if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
+  if (error) return NextResponse.json({ ok: false, error: normalizeDbError(error.message) }, { status: 500 })
   return NextResponse.json({ ok: true, data })
 }
 
 export async function PATCH(req: NextRequest) {
+  let supabase
+  try {
+    supabase = db()
+  } catch (error) {
+    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : 'Database client misconfigured' }, { status: 500 })
+  }
+
   const body = await req.json()
   const { id, ...patch } = body
 
@@ -62,20 +79,25 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ ok: false, error: 'No valid fields to update' }, { status: 400 })
   }
 
-  const supabase = db()
   const { error } = await supabase.from('chapter_tasks').update(allowed).eq('id', id)
-  if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
+  if (error) return NextResponse.json({ ok: false, error: normalizeDbError(error.message) }, { status: 500 })
   return NextResponse.json({ ok: true })
 }
 
 export async function DELETE(req: NextRequest) {
+  let supabase
+  try {
+    supabase = db()
+  } catch (error) {
+    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : 'Database client misconfigured' }, { status: 500 })
+  }
+
   const body = await req.json()
   const { id } = body
 
   if (!id) return NextResponse.json({ ok: false, error: 'id is required' }, { status: 400 })
 
-  const supabase = db()
   const { error } = await supabase.from('chapter_tasks').delete().eq('id', id)
-  if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
+  if (error) return NextResponse.json({ ok: false, error: normalizeDbError(error.message) }, { status: 500 })
   return NextResponse.json({ ok: true })
 }

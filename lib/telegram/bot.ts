@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { buildDsuMessage } from '@/lib/telegram/dsu'
 
 const noStoreFetch: typeof fetch = (input, init) => {
@@ -11,13 +11,7 @@ const noStoreFetch: typeof fetch = (input, init) => {
 
 // Service-role client — bypasses RLS for server-side writes
 function db() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      global: { fetch: noStoreFetch },
-    }
-  )
+  return createAdminClient(noStoreFetch)
 }
 
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN!
@@ -43,6 +37,14 @@ type TgUpdate = {
   message?: TgMessage
   edited_message?: TgMessage
   callback_query?: TgCallbackQuery
+}
+
+function normalizeBotError(err: unknown): string {
+  const message = err instanceof Error ? err.message : 'Unexpected error'
+  if (/row-level security policy/i.test(message) && /chapter[-_]tasks/i.test(message)) {
+    return `${message}\n\nCheck server env: SUPABASE_SERVICE_ROLE_KEY must be set to the service_role key (not anon).`
+  }
+  return message
 }
 
 const PAGE_SIZE = 5
@@ -208,7 +210,7 @@ export async function handleUpdate(update: unknown) {
     }
   } catch (err) {
     console.error('[TelegramBot]', err)
-    await send(chatId, `⚠️ ${err instanceof Error ? err.message : 'Unexpected error'}`)
+    await send(chatId, `⚠️ ${normalizeBotError(err)}`)
   }
 }
 
