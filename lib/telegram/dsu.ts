@@ -1,5 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 
+type DsuInlineKeyboardButton = { text: string; callback_data: string }
+type DsuInlineKeyboardMarkup = { inline_keyboard: DsuInlineKeyboardButton[][] }
+
 export function db() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -50,14 +53,26 @@ export async function buildDsuMessage(): Promise<string> {
     })
     .join('\n')
 
-  const urgentTasks = (tasks ?? []).filter(t => t.status === 'urgent')
-  const openTasks   = (tasks ?? [])
+  // Defensive dedupe: prevent repeated DSU lines if duplicate rows exist.
+  const uniqueOpenTasks = Array.from(new Map(
+    (tasks ?? []).map(t => [
+      `${t.chapter_id}|${t.owner.trim().toLowerCase()}|${t.description.trim().toLowerCase()}|${t.status}`,
+      t,
+    ])
+  ).values())
+
+  const uniqueOpenRisks = Array.from(new Map(
+    (risks ?? []).map(r => [`${r.code.trim().toUpperCase()}|${r.status}`, r])
+  ).values())
+
+  const urgentTasks = uniqueOpenTasks.filter(t => t.status === 'urgent')
+  const openTasks = uniqueOpenTasks
 
   const urgentBlock = urgentTasks.length
     ? urgentTasks.map(t => `🔴 <b>${t.owner}</b> [${t.chapter_id}]: ${t.description}`).join('\n')
     : '  None'
 
-  const highRisks = (risks ?? []).filter(r => r.severity === 'high')
+  const highRisks = uniqueOpenRisks.filter(r => r.severity === 'high')
   const sevIcon: Record<string, string> = { high: '🔴', medium: '🟡', low: '🟢' }
 
   const risksBlock = highRisks.length
@@ -77,8 +92,23 @@ ${chapterBlock}
 <b>✅ Urgent Tasks</b> (${urgentTasks.length} urgent · ${openTasks.length} total open)
 ${urgentBlock}
 
-<b>⚠️ High Risks</b> (${(risks ?? []).length} total open)
+<b>⚠️ High Risks</b> (${uniqueOpenRisks.length} total open)
 ${risksBlock}
 
 <i>Use /tasks, /risks, or /chapter [id] for details.</i>`
+}
+
+export function buildDsuInlineKeyboard(): DsuInlineKeyboardMarkup {
+  return {
+    inline_keyboard: [
+      [
+        { text: '📊 Status', callback_data: 'pg|status|-|0' },
+        { text: '✅ Tasks', callback_data: 'pg|tasks|-|0' },
+      ],
+      [
+        { text: '⚠️ Risks', callback_data: 'pg|risks|-|0' },
+        { text: '📈 KPIs', callback_data: 'pg|kpis|-|0' },
+      ],
+    ],
+  }
 }

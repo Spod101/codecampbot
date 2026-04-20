@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { buildDsuMessage } from '@/lib/telegram/dsu'
+import { buildDsuInlineKeyboard, buildDsuMessage } from '@/lib/telegram/dsu'
 
 function db() {
   return createClient(
@@ -36,7 +36,12 @@ export async function POST() {
   const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML' }),
+    body: JSON.stringify({
+      chat_id: chatId,
+      text,
+      parse_mode: 'HTML',
+      reply_markup: buildDsuInlineKeyboard(),
+    }),
   })
   const data = await res.json()
 

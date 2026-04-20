@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { buildDsuMessage } from '@/lib/telegram/dsu'
+import { buildDsuInlineKeyboard, buildDsuMessage } from '@/lib/telegram/dsu'
 
 // Service-role client — bypasses RLS for server-side writes
 function db() {
@@ -351,7 +351,7 @@ async function cmdHelp(chatId: number) {
 
 async function cmdStandup(chatId: number) {
   const text = await buildDsuMessage()
-  await send(chatId, text)
+  await send(chatId, text, buildDsuInlineKeyboard())
 }
 
 // ─── /status ────────────────────────────────────────────────────────────────
