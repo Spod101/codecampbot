@@ -1,9 +1,20 @@
 import { createClient } from '@supabase/supabase-js'
 
+const noStoreFetch: typeof fetch = (input, init) => {
+  return fetch(input, {
+    ...init,
+    cache: 'no-store',
+    next: { revalidate: 0 },
+  } as RequestInit & { next: { revalidate: 0 } })
+}
+
 export function db() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      global: { fetch: noStoreFetch },
+    }
   )
 }
 
