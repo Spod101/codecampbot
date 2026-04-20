@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { unstable_noStore } from 'next/cache'
-import { buildDsuInlineKeyboard, buildDsuMessage } from '@/lib/telegram/dsu'
+import { buildDsuMessage } from '@/lib/telegram/dsu'
 
 function db() {
   return createClient(
@@ -98,7 +98,6 @@ export async function GET(req: Request) {
       chat_id: chatId,
       text,
       parse_mode: 'HTML',
-      reply_markup: buildDsuInlineKeyboard(),
     }),
   })
 

@@ -1,8 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
 
-type DsuInlineKeyboardButton = { text: string; callback_data: string }
-type DsuInlineKeyboardMarkup = { inline_keyboard: DsuInlineKeyboardButton[][] }
-
 export function db() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -96,19 +93,4 @@ ${urgentBlock}
 ${risksBlock}
 
 <i>Use /tasks, /risks, or /chapter [id] for details.</i>`
-}
-
-export function buildDsuInlineKeyboard(): DsuInlineKeyboardMarkup {
-  return {
-    inline_keyboard: [
-      [
-        { text: '📊 Status', callback_data: 'pg|status|-|0' },
-        { text: '✅ Tasks', callback_data: 'pg|tasks|-|0' },
-      ],
-      [
-        { text: '⚠️ Risks', callback_data: 'pg|risks|-|0' },
-        { text: '📈 KPIs', callback_data: 'pg|kpis|-|0' },
-      ],
-    ],
-  }
 }

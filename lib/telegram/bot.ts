@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { buildDsuInlineKeyboard, buildDsuMessage } from '@/lib/telegram/dsu'
+import { buildDsuMessage } from '@/lib/telegram/dsu'
 
 // Service-role client — bypasses RLS for server-side writes
 function db() {
@@ -170,7 +170,6 @@ export async function handleUpdate(update: unknown) {
     switch (cmd) {
       case 'start':
       case 'help':      return await cmdHelp(chatId)
-      case 'standup':   return await cmdStandup(chatId)
       case 'status':    return await cmdStatus(chatId)
       case 'tasks':     return await cmdTasks(chatId, rest)
       case 'risks':     return await cmdRisks(chatId, rest)
@@ -219,7 +218,7 @@ async function handleCallbackQuery(cb: TgCallbackQuery) {
 
   switch (payload.view) {
     case 'status':
-      await cmdStatus(chatId, payload.page, { messageId })
+      await cmdStatusDashboard(chatId, payload.page, { messageId })
       break
     case 'tasks':
       await cmdTasks(chatId, payload.filter, payload.page, { messageId })
@@ -305,8 +304,7 @@ async function cmdHelp(chatId: number) {
   await send(chatId, `<b>📋 DEVCON × Sui Tracker Bot</b>
 
 <b>📊 View</b>
-/standup — today's DSU
-/status — overall dashboard
+/status — today's DSU
 /tasks [chapter?] — open tasks
 /risks [high|med|low?] — risk register
 /chapter [id] — chapter detail
@@ -347,16 +345,17 @@ async function cmdHelp(chatId: number) {
 <i>Task IDs: MNL-t1, TCL-t2 etc. Risk codes: R1, R2 etc. Contact/merch: first 6 chars of UUID.</i>`)
 }
 
-// ─── /standup ───────────────────────────────────────────────────────────────
-
-async function cmdStandup(chatId: number) {
-  const text = await buildDsuMessage()
-  await send(chatId, text, buildDsuInlineKeyboard())
-}
-
 // ─── /status ────────────────────────────────────────────────────────────────
 
-async function cmdStatus(chatId: number, page = 0, editTarget?: { messageId: number }) {
+async function cmdStatus(chatId: number) {
+  const text = await buildDsuMessage()
+  await send(chatId, text)
+}
+
+// Legacy compact dashboard renderer retained for callback paging compatibility.
+// ─── internal status dashboard ───────────────────────────────────────────────
+
+async function cmdStatusDashboard(chatId: number, page = 0, editTarget?: { messageId: number }) {
   const sb = db()
   const [{ data: chapters }, { data: tasks }, { data: risks }, { data: kpis }] = await Promise.all([
     sb.from('chapters').select('name, number, status, progress_percent').order('number'),
