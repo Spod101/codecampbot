@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { noStore } from 'next/cache'
+import { unstable_noStore } from 'next/cache'
 import { buildDsuInlineKeyboard, buildDsuMessage } from '@/lib/telegram/dsu'
 
 function db() {
@@ -69,7 +69,7 @@ function isAuthorizedCronRequest(req: Request) {
 }
 
 export async function GET(req: Request) {
-  noStore()
+  unstable_noStore()
 
   if (!isAuthorizedCronRequest(req)) {
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
