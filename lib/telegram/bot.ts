@@ -196,7 +196,9 @@ export async function handleUpdate(update: unknown) {
       case 'addrisk':      return await cmdAddRisk(chatId, rest)
       case 'resolve':      return await cmdResolveRisk(chatId, rest)
       case 'deleterisk':   return await cmdDeleteRisk(chatId, rest)
-      case 'severity':     return await cmdSetSeverity(chatId, rest)
+      case 'severity':
+      case 'setriskseverity':
+        return await cmdSetSeverity(chatId, rest)
       case 'setriskowner':
       case 'addownerrisk': return await cmdSetRiskOwner(chatId, rest)
       case 'setkpi':       return await cmdSetKpi(chatId, rest)
@@ -331,9 +333,9 @@ async function cmdHelp(chatId: number) {
 /deletetask [id] — remove task
 
 <b>⚠️ Risks</b>  <i>(IDs like R1, R2)</i>
-/addrisk [sev] [chapter] [title] | [desc]
+/addrisk [severity] [chapter] [title] | [description]
 /resolve [code] — mark resolved
-/severity [code] [high|medium|low]
+/setriskseverity [code] [high|medium|low]
 /setriskowner [code] [owner]
 /deleterisk [code] — remove risk
 
