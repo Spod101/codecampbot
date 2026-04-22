@@ -4,7 +4,7 @@ import Badge from '@/components/ui/Badge'
 import ProgressBar from '@/components/ui/ProgressBar'
 import SlideOver from '@/components/ui/SlideOver'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
-import FormField, { FieldInput, FieldTextarea } from '@/components/ui/FormField'
+import FormField, { FieldInput, FieldSelect, FieldTextarea } from '@/components/ui/FormField'
 import type { Chapter, ChapterTask, BadgeVariant } from '@/lib/types'
 
 /* ── accent colours ─────────────────────────────────────────────────────── */
@@ -27,9 +27,19 @@ interface CheckItem {
   tCode: string
   task: string
   date: string
-  status: CheckStatus
+  status: string
+  activity_status?: string
   isEvent?: boolean
 }
+
+interface ChecklistOverrideEntry {
+  date_status?: string
+  activity_status?: string
+}
+
+const DATE_STATUS_OPTIONS = ['upcoming', 'overdue', 'confirm', 'pending', 'in_progress', 'done', 'executed']
+const ACTIVITY_STATUS_OPTIONS = ['done', 'pending', 'in_progress', 'overdue', 'confirm', 'upcoming', 'executed']
+const CUSTOM_STATUS_VALUE = '__custom__'
 
 const CHECKLIST: Record<string, CheckItem[]> = {
   manila: [
@@ -102,6 +112,41 @@ const CHECK_BADGE: Record<CheckStatus, { color: string; bg: string; border: stri
   upcoming:    { color: '#334155', bg: 'rgba(51,65,85,0.12)',    border: 'rgba(51,65,85,0.25)',   label: '· UPCOMING'   },
 }
 
+function normalizeStatusLabel(raw: string): string {
+  return raw.replace(/_/g, ' ').trim().toUpperCase()
+}
+
+function statusOptionLabel(raw: string): string {
+  return raw
+    .replace(/_/g, ' ')
+    .trim()
+    .split(' ')
+    .filter(Boolean)
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
+}
+
+function checklistBadge(rawStatus: string) {
+  const status = rawStatus.trim().toLowerCase() as CheckStatus
+  const known = CHECK_BADGE[status]
+  if (known) return known
+  return {
+    color: '#94a3b8',
+    bg: 'rgba(71,85,105,0.12)',
+    border: 'rgba(71,85,105,0.35)',
+    label: normalizeStatusLabel(rawStatus || 'unknown'),
+  }
+}
+
+function defaultActivityStatus(item: CheckItem): string {
+  if (item.activity_status?.trim()) return item.activity_status
+  const timeline = item.status.trim().toLowerCase()
+  if (timeline === 'done' || timeline === 'executed') return 'done'
+  if (timeline === 'in_progress') return 'in_progress'
+  if (timeline === 'pending') return 'pending'
+  return 'pending'
+}
+
 /* ── relative time helper ────────────────────────────────────────────────── */
 function relativeDay(isoDate: string | null): string {
   if (!isoDate) return 'TBD'
@@ -112,12 +157,14 @@ function relativeDay(isoDate: string | null): string {
 }
 
 /* ── Checklist row ───────────────────────────────────────────────────────── */
-function CheckRow({ item }: { item: CheckItem }) {
-  const s = CHECK_BADGE[item.status]
+function CheckRow({ item, onEdit }: { item: CheckItem; onEdit: () => void }) {
+  const dateStatus = checklistBadge(item.status)
+  const activityStatus = checklistBadge(defaultActivityStatus(item))
+
   return (
     <div
       style={{
-        display: 'grid', gridTemplateColumns: '52px 1fr auto', gap: '14px',
+        display: 'grid', gridTemplateColumns: '52px 1fr auto auto auto', gap: '10px',
         alignItems: 'center', padding: '13px 18px',
         background: item.isEvent ? 'rgba(6,182,212,0.04)' : '#0f172a',
         border: `1px solid ${item.isEvent ? 'rgba(6,182,212,0.2)' : '#1e293b'}`,
@@ -136,9 +183,30 @@ function CheckRow({ item }: { item: CheckItem }) {
         <div style={{ fontSize: '10px', color: '#475569' }}>{item.date}</div>
       </div>
       {/* Status pill */}
-      <span style={{ display: 'inline-flex', padding: '4px 10px', borderRadius: '8px', fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap', background: s.bg, color: s.color, border: `1px solid ${s.border}` }}>
-        {s.label}
+      <span style={{ display: 'inline-flex', padding: '4px 10px', borderRadius: '8px', fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap', background: dateStatus.bg, color: dateStatus.color, border: `1px solid ${dateStatus.border}` }}>
+        {dateStatus.label}
       </span>
+      <span style={{ display: 'inline-flex', padding: '4px 10px', borderRadius: '8px', fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap', background: activityStatus.bg, color: activityStatus.color, border: `1px solid ${activityStatus.border}` }}>
+        {activityStatus.label}
+      </span>
+      <button
+        onClick={onEdit}
+        style={{
+          padding: '4px 10px',
+          borderRadius: '8px',
+          background: 'rgba(6,182,212,0.12)',
+          border: '1px solid rgba(6,182,212,0.35)',
+          color: '#06b6d4',
+          fontSize: '9px',
+          fontWeight: 800,
+          letterSpacing: '0.05em',
+          textTransform: 'uppercase',
+          cursor: 'pointer',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        Edit Status
+      </button>
     </div>
   )
 }
@@ -166,17 +234,76 @@ export default function ChapterDetailPanel({ chapterId, chapters, onBack, onRefr
   const [addLoading, setAddLoading] = useState(false)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [hoverId, setHoverId] = useState<string | null>(null)
+  const [profileOpen, setProfileOpen] = useState(false)
+  const [scheduleOpen, setScheduleOpen] = useState(false)
+  const [metricsOpen, setMetricsOpen] = useState(false)
+  const [profileSaving, setProfileSaving] = useState(false)
+  const [scheduleSaving, setScheduleSaving] = useState(false)
+  const [metricsSaving, setMetricsSaving] = useState(false)
+  const [profileForm, setProfileForm] = useState({
+    name: '',
+    city: '',
+    region: '',
+    venue: '',
+    lead_name: '',
+    status: 'in_progress',
+  })
+  const [scheduleForm, setScheduleForm] = useState({
+    date_text: '',
+    date_iso: '',
+  })
+  const [metricsForm, setMetricsForm] = useState({
+    pax_target: '',
+    pax_actual: '',
+    merch_status: '',
+    progress_percent: '0',
+  })
+  const [editTask, setEditTask] = useState<ChapterTask | null>(null)
+  const [taskOwner, setTaskOwner] = useState('')
+  const [taskDesc, setTaskDesc] = useState('')
+  const [taskSaving, setTaskSaving] = useState(false)
+  const [checklistOverrides, setChecklistOverrides] = useState<Record<string, ChecklistOverrideEntry>>({})
+  const [checkEdit, setCheckEdit] = useState<{ index: number; date_status: string; activity_status: string } | null>(null)
+  const [checkEditSaving, setCheckEditSaving] = useState(false)
+  const [checkDateCustom, setCheckDateCustom] = useState('')
+  const [checkActivityCustom, setCheckActivityCustom] = useState('')
 
   // Sync todos when parent refreshes
   useEffect(() => {
     if (chapter) setTodos(chapter.todos)
   }, [chapter?.todos])
 
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadChecklistOverrides() {
+      const res = await fetch(`/api/chapter-checklist?chapter_id=${chapterId}`, { cache: 'no-store' })
+      if (!res.ok) return
+      const payload = await res.json()
+      if (!cancelled && payload.ok) {
+        setChecklistOverrides(payload.data ?? {})
+      }
+    }
+
+    loadChecklistOverrides()
+    return () => {
+      cancelled = true
+    }
+  }, [chapterId])
+
   if (!chapter) return null
 
   const accent  = accentOf(chapter)
   const sb      = statusBadge[chapter.status]
-  const checklist = CHECKLIST[chapterId] ?? []
+  const checklist = (CHECKLIST[chapterId] ?? []).map((item, index) => {
+    const override = checklistOverrides[String(index)]
+    if (!override) return item
+    return {
+      ...item,
+      status: override.date_status?.trim() ? override.date_status : item.status,
+      activity_status: override.activity_status?.trim() ? override.activity_status : item.activity_status,
+    }
+  })
   const relDay  = relativeDay(chapter.date_iso)
 
   async function addTask() {
@@ -217,6 +344,187 @@ export default function ChapterDetailPanel({ chapterId, chapters, onBack, onRefr
     onRefresh?.()
   }
 
+  function openProfileEditor() {
+    setProfileForm({
+      name: chapter.name,
+      city: chapter.city,
+      region: chapter.region,
+      venue: chapter.venue,
+      lead_name: chapter.lead_name,
+      status: chapter.status,
+    })
+    setProfileOpen(true)
+  }
+
+  function openScheduleEditor() {
+    setScheduleForm({
+      date_text: chapter.date_text,
+      date_iso: chapter.date_iso ?? '',
+    })
+    setScheduleOpen(true)
+  }
+
+  function openMetricsEditor() {
+    setMetricsForm({
+      pax_target: chapter.pax_target === null ? '' : String(chapter.pax_target),
+      pax_actual: chapter.pax_actual === null ? '' : String(chapter.pax_actual),
+      merch_status: chapter.merch_status,
+      progress_percent: String(chapter.progress_percent),
+    })
+    setMetricsOpen(true)
+  }
+
+  async function saveProfileDetails() {
+    setProfileSaving(true)
+    const body = {
+      id: chapter.id,
+      name: profileForm.name.trim(),
+      city: profileForm.city.trim(),
+      region: profileForm.region.trim(),
+      venue: profileForm.venue.trim(),
+      lead_name: profileForm.lead_name.trim(),
+      status: profileForm.status,
+    }
+    const res = await fetch('/api/chapters', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    if (res.ok) {
+      await onRefresh?.()
+      setProfileOpen(false)
+    }
+    setProfileSaving(false)
+  }
+
+  async function saveScheduleDetails() {
+    setScheduleSaving(true)
+    const res = await fetch('/api/chapters', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: chapter.id,
+        date_text: scheduleForm.date_text.trim() || 'TBD',
+        date_iso: scheduleForm.date_iso.trim() || null,
+      }),
+    })
+    if (res.ok) {
+      await onRefresh?.()
+      setScheduleOpen(false)
+    }
+    setScheduleSaving(false)
+  }
+
+  async function saveMetricsDetails() {
+    setMetricsSaving(true)
+    const res = await fetch('/api/chapters', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: chapter.id,
+        pax_target: metricsForm.pax_target.trim() === '' ? null : Number(metricsForm.pax_target),
+        pax_actual: metricsForm.pax_actual.trim() === '' ? null : Number(metricsForm.pax_actual),
+        merch_status: metricsForm.merch_status.trim(),
+        progress_percent: Number(metricsForm.progress_percent),
+      }),
+    })
+    if (res.ok) {
+      await onRefresh?.()
+      setMetricsOpen(false)
+    }
+    setMetricsSaving(false)
+  }
+
+  function openTaskEditor(task: ChapterTask) {
+    setEditTask(task)
+    setTaskOwner(task.owner)
+    setTaskDesc(task.description)
+  }
+
+  async function saveTaskEdit() {
+    if (!editTask || !taskOwner.trim() || !taskDesc.trim()) return
+    setTaskSaving(true)
+    const res = await fetch('/api/chapter-tasks', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: editTask.id,
+        owner: taskOwner.trim(),
+        description: taskDesc.trim(),
+      }),
+    })
+    if (res.ok) {
+      setTodos(prev => prev.map(t => t.id === editTask.id ? { ...t, owner: taskOwner.trim(), description: taskDesc.trim() } : t))
+      await onRefresh?.()
+      setEditTask(null)
+    }
+    setTaskSaving(false)
+  }
+
+  function openChecklistEditor(index: number, item: CheckItem) {
+    const dateStatus = item.status.trim()
+    const activityStatus = defaultActivityStatus(item).trim()
+    const dateKnown = DATE_STATUS_OPTIONS.includes(dateStatus)
+    const activityKnown = ACTIVITY_STATUS_OPTIONS.includes(activityStatus)
+
+    setCheckDateCustom(dateKnown ? '' : dateStatus)
+    setCheckActivityCustom(activityKnown ? '' : activityStatus)
+    setCheckEdit({
+      index,
+      date_status: dateKnown ? dateStatus : CUSTOM_STATUS_VALUE,
+      activity_status: activityKnown ? activityStatus : CUSTOM_STATUS_VALUE,
+    })
+  }
+
+  async function saveChecklistStatuses() {
+    if (!checkEdit) return
+
+    const resolvedDateStatus = checkEdit.date_status === CUSTOM_STATUS_VALUE
+      ? checkDateCustom.trim()
+      : checkEdit.date_status.trim()
+    const resolvedActivityStatus = checkEdit.activity_status === CUSTOM_STATUS_VALUE
+      ? checkActivityCustom.trim()
+      : checkEdit.activity_status.trim()
+
+    const idx = String(checkEdit.index)
+    const payload = {
+      chapter_id: chapterId,
+      item_index: checkEdit.index,
+      date_status: resolvedDateStatus,
+      activity_status: resolvedActivityStatus,
+    }
+    if (!payload.date_status || !payload.activity_status) return
+
+    const prev = checklistOverrides[idx]
+    setCheckEditSaving(true)
+    setChecklistOverrides(current => ({
+      ...current,
+      [idx]: {
+        date_status: payload.date_status,
+        activity_status: payload.activity_status,
+      },
+    }))
+
+    const res = await fetch('/api/chapter-checklist', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+
+    if (!res.ok) {
+      setChecklistOverrides(current => {
+        const restored = { ...current }
+        if (prev === undefined) delete restored[idx]
+        else restored[idx] = prev
+        return restored
+      })
+    } else {
+      setCheckEdit(null)
+    }
+
+    setCheckEditSaving(false)
+  }
+
   /* Liquidation status — infer from checklist or todos */
   const liqItem = checklist.find(i => i.tCode === 'T+7')
   const liqStatus = liqItem?.status ?? (chapter.status === 'completed' ? 'confirm' : 'upcoming')
@@ -236,15 +544,36 @@ export default function ChapterDetailPanel({ chapterId, chapters, onBack, onRefr
   return (
     <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '34px' }}>
 
-      {/* Back button */}
-      <button
-        onClick={onBack}
-        style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 14px', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '10px', fontSize: '11px', fontWeight: 700, color: '#64748b', cursor: 'pointer', transition: 'all .2s' }}
-        onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(6,182,212,0.4)'; e.currentTarget.style.color = '#cfd5dd' }}
-        onMouseLeave={e => { e.currentTarget.style.borderColor = '#1e293b'; e.currentTarget.style.color = '#64748b' }}
-      >
-        ← All Chapters
-      </button>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+        <button
+          onClick={onBack}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 14px', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '10px', fontSize: '11px', fontWeight: 700, color: '#64748b', cursor: 'pointer', transition: 'all .2s', flexShrink: 0 }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(6,182,212,0.4)'; e.currentTarget.style.color = '#cfd5dd' }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = '#1e293b'; e.currentTarget.style.color = '#64748b' }}
+        >
+          ← All Chapters
+        </button>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'nowrap', overflowX: 'auto' }}>
+          <button
+            onClick={openProfileEditor}
+            style={{ padding: '6px 12px', borderRadius: '8px', background: 'rgba(6,182,212,0.08)', border: '1px solid rgba(6,182,212,0.26)', color: '#06b6d4', fontSize: '11px', fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}
+          >
+            Edit Profile
+          </button>
+          <button
+            onClick={openScheduleEditor}
+            style={{ padding: '6px 12px', borderRadius: '8px', background: 'rgba(20,184,166,0.08)', border: '1px solid rgba(20,184,166,0.26)', color: '#14b8a6', fontSize: '11px', fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}
+          >
+            Edit Schedule
+          </button>
+          <button
+            onClick={openMetricsEditor}
+            style={{ padding: '6px 12px', borderRadius: '8px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.26)', color: '#f59e0b', fontSize: '11px', fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}
+          >
+            Edit Metrics
+          </button>
+        </div>
+      </div>
 
       {/* ── Hero card ────────────────────────────────────────────────────── */}
       <div style={{ position: 'relative', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '24px', padding: '34px', overflow: 'hidden' }}>
@@ -346,7 +675,15 @@ export default function ChapterDetailPanel({ chapterId, chapters, onBack, onRefr
 
           {/* Checklist rows */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {checklist.map((item, i) => <CheckRow key={i} item={item} />)}
+            {checklist.map((item, i) => {
+              return (
+                <CheckRow
+                  key={`${item.tCode}-${i}`}
+                  item={item}
+                  onEdit={() => openChecklistEditor(i, item)}
+                />
+              )
+            })}
           </div>
         </div>
       )}
@@ -395,6 +732,13 @@ export default function ChapterDetailPanel({ chapterId, chapters, onBack, onRefr
                   </div>
                   <div style={{ display: 'flex', gap: '6px', opacity: hoverId === t.id ? 1 : 0, transition: 'opacity .15s' }}>
                     <button
+                      onClick={() => openTaskEditor(t)}
+                      title="Edit task"
+                      style={{ padding: '4px 8px', borderRadius: '6px', background: 'rgba(6,182,212,0.08)', border: '1px solid rgba(6,182,212,0.25)', color: '#06b6d4', fontSize: '10px', fontWeight: 700, cursor: 'pointer' }}
+                    >
+                      ✎
+                    </button>
+                    <button
                       onClick={() => cycleStatus(t)}
                       title={`Cycle status (currently ${t.status})`}
                       style={{ padding: '4px 8px', borderRadius: '6px', background: `${statusColor}18`, border: `1px solid ${statusColor}40`, color: statusColor, fontSize: '10px', fontWeight: 700, cursor: 'pointer' }}
@@ -438,6 +782,172 @@ export default function ChapterDetailPanel({ chapterId, chapters, onBack, onRefr
             style={{ padding: '10px', borderRadius: '10px', background: addLoading || !addOwner.trim() || !addDesc.trim() ? '#1e293b' : 'linear-gradient(135deg,#06b6d4,#14b8a6)', border: 'none', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: addLoading ? 'wait' : 'pointer' }}
           >
             {addLoading ? 'Adding…' : 'Add Task'}
+          </button>
+        </div>
+      </SlideOver>
+
+      {/* Edit profile slide-over */}
+      <SlideOver open={profileOpen} onClose={() => setProfileOpen(false)} title="Edit Chapter Profile">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <FormField label="Chapter Name">
+            <FieldInput value={profileForm.name} onChange={e => setProfileForm(f => ({ ...f, name: e.target.value }))} />
+          </FormField>
+          <FormField label="City">
+            <FieldInput value={profileForm.city} onChange={e => setProfileForm(f => ({ ...f, city: e.target.value }))} />
+          </FormField>
+          <FormField label="Region">
+            <FieldInput value={profileForm.region} onChange={e => setProfileForm(f => ({ ...f, region: e.target.value }))} />
+          </FormField>
+          <FormField label="Venue">
+            <FieldTextarea value={profileForm.venue} onChange={e => setProfileForm(f => ({ ...f, venue: e.target.value }))} />
+          </FormField>
+          <FormField label="Lead Name">
+            <FieldInput value={profileForm.lead_name} onChange={e => setProfileForm(f => ({ ...f, lead_name: e.target.value }))} />
+          </FormField>
+          <FormField label="Status">
+            <FieldSelect value={profileForm.status} onChange={e => setProfileForm(f => ({ ...f, status: e.target.value }))}>
+              <option value="in_progress">In Progress</option>
+              <option value="activating">Activating</option>
+              <option value="pencil_booked">Pencil-booked</option>
+              <option value="tbc">TBC</option>
+              <option value="rescheduling">Rescheduling</option>
+              <option value="completed">Completed</option>
+            </FieldSelect>
+          </FormField>
+          <button
+            onClick={saveProfileDetails}
+            disabled={profileSaving || !profileForm.name.trim() || !profileForm.city.trim() || !profileForm.region.trim() || !profileForm.venue.trim() || !profileForm.lead_name.trim()}
+            style={{ padding: '10px', borderRadius: '10px', background: profileSaving ? '#1e293b' : 'linear-gradient(135deg,#06b6d4,#14b8a6)', border: 'none', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: profileSaving ? 'wait' : 'pointer' }}
+          >
+            {profileSaving ? 'Saving…' : 'Save Profile'}
+          </button>
+        </div>
+      </SlideOver>
+
+      {/* Edit schedule slide-over */}
+      <SlideOver open={scheduleOpen} onClose={() => setScheduleOpen(false)} title="Edit Schedule">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <FormField label="Date Display Text">
+            <FieldInput
+              placeholder="e.g. Apr 18 (Dev Event) + May 16"
+              value={scheduleForm.date_text}
+              onChange={e => setScheduleForm(f => ({ ...f, date_text: e.target.value }))}
+            />
+          </FormField>
+          <FormField label="Event Date">
+            <FieldInput
+              type="date"
+              value={scheduleForm.date_iso}
+              onChange={e => setScheduleForm(f => ({ ...f, date_iso: e.target.value }))}
+            />
+          </FormField>
+          <button
+            onClick={saveScheduleDetails}
+            disabled={scheduleSaving}
+            style={{ padding: '10px', borderRadius: '10px', background: scheduleSaving ? '#1e293b' : 'linear-gradient(135deg,#06b6d4,#14b8a6)', border: 'none', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: scheduleSaving ? 'wait' : 'pointer' }}
+          >
+            {scheduleSaving ? 'Saving…' : 'Save Schedule'}
+          </button>
+        </div>
+      </SlideOver>
+
+      {/* Edit metrics slide-over */}
+      <SlideOver open={metricsOpen} onClose={() => setMetricsOpen(false)} title="Edit Metrics">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <FormField label="Pax Target">
+            <FieldInput type="number" min="0" value={metricsForm.pax_target} onChange={e => setMetricsForm(f => ({ ...f, pax_target: e.target.value }))} />
+          </FormField>
+          <FormField label="Actual Pax">
+            <FieldInput type="number" min="0" value={metricsForm.pax_actual} onChange={e => setMetricsForm(f => ({ ...f, pax_actual: e.target.value }))} />
+          </FormField>
+          <FormField label="Merch Status">
+            <FieldInput value={metricsForm.merch_status} onChange={e => setMetricsForm(f => ({ ...f, merch_status: e.target.value }))} />
+          </FormField>
+          <FormField label="Progress %">
+            <FieldInput type="number" min="0" max="100" value={metricsForm.progress_percent} onChange={e => setMetricsForm(f => ({ ...f, progress_percent: e.target.value }))} />
+          </FormField>
+          <button
+            onClick={saveMetricsDetails}
+            disabled={metricsSaving}
+            style={{ padding: '10px', borderRadius: '10px', background: metricsSaving ? '#1e293b' : 'linear-gradient(135deg,#06b6d4,#14b8a6)', border: 'none', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: metricsSaving ? 'wait' : 'pointer' }}
+          >
+            {metricsSaving ? 'Saving…' : 'Save Metrics'}
+          </button>
+        </div>
+      </SlideOver>
+
+      {/* Edit task slide-over */}
+      <SlideOver open={editTask !== null} onClose={() => setEditTask(null)} title="Edit Task">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <FormField label="Owner">
+            <FieldInput value={taskOwner} onChange={e => setTaskOwner(e.target.value)} />
+          </FormField>
+          <FormField label="Description">
+            <FieldTextarea value={taskDesc} onChange={e => setTaskDesc(e.target.value)} />
+          </FormField>
+          <button
+            onClick={saveTaskEdit}
+            disabled={taskSaving || !taskOwner.trim() || !taskDesc.trim()}
+            style={{ padding: '10px', borderRadius: '10px', background: taskSaving ? '#1e293b' : 'linear-gradient(135deg,#06b6d4,#14b8a6)', border: 'none', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: taskSaving ? 'wait' : 'pointer' }}
+          >
+            {taskSaving ? 'Saving…' : 'Save Task'}
+          </button>
+        </div>
+      </SlideOver>
+
+      {/* Edit checklist statuses */}
+      <SlideOver open={checkEdit !== null} onClose={() => setCheckEdit(null)} title="Edit Checklist Status">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <FormField label="Date Status">
+            <FieldSelect
+              value={checkEdit?.date_status ?? ''}
+              onChange={e => setCheckEdit(prev => prev ? { ...prev, date_status: e.target.value } : prev)}
+            >
+              {DATE_STATUS_OPTIONS.map(option => (
+                <option key={option} value={option}>{statusOptionLabel(option)}</option>
+              ))}
+              <option value={CUSTOM_STATUS_VALUE}>Custom...</option>
+            </FieldSelect>
+          </FormField>
+          {checkEdit?.date_status === CUSTOM_STATUS_VALUE && (
+            <FormField label="Custom Date Status">
+              <FieldInput
+                placeholder="Type custom date status"
+                value={checkDateCustom}
+                onChange={e => setCheckDateCustom(e.target.value)}
+              />
+            </FormField>
+          )}
+          <FormField label="Activity Status">
+            <FieldSelect
+              value={checkEdit?.activity_status ?? ''}
+              onChange={e => setCheckEdit(prev => prev ? { ...prev, activity_status: e.target.value } : prev)}
+            >
+              {ACTIVITY_STATUS_OPTIONS.map(option => (
+                <option key={option} value={option}>{statusOptionLabel(option)}</option>
+              ))}
+              <option value={CUSTOM_STATUS_VALUE}>Custom...</option>
+            </FieldSelect>
+          </FormField>
+          {checkEdit?.activity_status === CUSTOM_STATUS_VALUE && (
+            <FormField label="Custom Activity Status">
+              <FieldInput
+                placeholder="Type custom activity status"
+                value={checkActivityCustom}
+                onChange={e => setCheckActivityCustom(e.target.value)}
+              />
+            </FormField>
+          )}
+          <button
+            onClick={saveChecklistStatuses}
+            disabled={
+              checkEditSaving
+              || (checkEdit?.date_status === CUSTOM_STATUS_VALUE && !checkDateCustom.trim())
+              || (checkEdit?.activity_status === CUSTOM_STATUS_VALUE && !checkActivityCustom.trim())
+            }
+            style={{ padding: '10px', borderRadius: '10px', background: checkEditSaving ? '#1e293b' : 'linear-gradient(135deg,#06b6d4,#14b8a6)', border: 'none', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: checkEditSaving ? 'wait' : 'pointer' }}
+          >
+            {checkEditSaving ? 'Saving…' : 'Save Checklist Status'}
           </button>
         </div>
       </SlideOver>
