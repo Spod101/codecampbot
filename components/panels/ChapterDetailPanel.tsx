@@ -442,6 +442,7 @@ export default function ChapterDetailPanel({ chapterId, chapters, onBack, onRefr
   }
 
   function openScheduleEditor() {
+    if (!chapter) return
     setScheduleForm({
       date_text: chapter.date_text,
       date_iso: chapter.date_iso ?? '',
@@ -450,6 +451,7 @@ export default function ChapterDetailPanel({ chapterId, chapters, onBack, onRefr
   }
 
   function openMetricsEditor() {
+    if (!chapter) return
     setMetricsForm({
       pax_target: chapter.pax_target === null ? '' : String(chapter.pax_target),
       pax_actual: chapter.pax_actual === null ? '' : String(chapter.pax_actual),
@@ -460,6 +462,7 @@ export default function ChapterDetailPanel({ chapterId, chapters, onBack, onRefr
   }
 
   async function saveProfileDetails() {
+    if (!chapter) return
     setProfileSaving(true)
     const body = {
       id: chapter.id,
@@ -483,6 +486,7 @@ export default function ChapterDetailPanel({ chapterId, chapters, onBack, onRefr
   }
 
   async function saveScheduleDetails() {
+    if (!chapter) return
     setScheduleSaving(true)
     const res = await fetch('/api/chapters', {
       method: 'PATCH',
@@ -501,6 +505,7 @@ export default function ChapterDetailPanel({ chapterId, chapters, onBack, onRefr
   }
 
   async function saveMetricsDetails() {
+    if (!chapter) return
     setMetricsSaving(true)
     const res = await fetch('/api/chapters', {
       method: 'PATCH',
