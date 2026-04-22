@@ -18,6 +18,8 @@ const TOKEN = process.env.TELEGRAM_BOT_TOKEN!
 
 type InlineKeyboardButton = { text: string; callback_data: string }
 type InlineKeyboardMarkup = { inline_keyboard: InlineKeyboardButton[][] }
+type ChecklistOverrideEntry = { date_status?: string; activity_status?: string }
+type ChecklistOverrides = Record<string, Record<string, ChecklistOverrideEntry>>
 
 type PageView = 'status' | 'tasks' | 'risks' | 'kpis' | 'contacts' | 'merch'
 
@@ -95,6 +97,41 @@ function decodeFilter(filter: string) {
 
 function callbackPayload(view: PageView, page: number, filter?: string) {
   return `pg|${view}|${encodeFilter(filter)}|${page}`
+}
+
+function formatDateIsoForDisplay(isoDate: string | null): string {
+  if (!isoDate) return ''
+  const date = new Date(`${isoDate}T00:00:00Z`)
+  return new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(date)
+}
+
+function chapterDateForDisplay(isoDate: string | null, dateText: string): string {
+  const primary = formatDateIsoForDisplay(isoDate)
+  const secondary = dateText.trim()
+
+  if (primary && secondary && secondary !== primary) {
+    return `${primary} (${secondary})`
+  }
+
+  if (primary) return primary
+  if (secondary) return secondary
+  return 'TBD'
+}
+
+function parseChecklistOverrides(raw: string | null | undefined): ChecklistOverrides {
+  if (!raw) return {}
+  try {
+    const parsed = JSON.parse(raw) as unknown
+    if (!parsed || typeof parsed !== 'object') return {}
+    return parsed as ChecklistOverrides
+  } catch {
+    return {}
+  }
 }
 
 function parseCallbackPayload(data: string): { view: PageView; page: number; filter: string } | null {
@@ -203,6 +240,7 @@ export async function handleUpdate(update: unknown) {
       case 'addownerrisk': return await cmdSetRiskOwner(chatId, rest)
       case 'setkpi':       return await cmdSetKpi(chatId, rest)
       case 'setchapter':   return await cmdSetChapter(chatId, rest)
+      case 'setcheck':     return await cmdSetChecklistActivity(chatId, rest)
       case 'contacts':     return await cmdContacts(chatId, rest)
       case 'addcontact':   return await cmdAddContact(chatId, rest)
       case 'deletecontact':return await cmdDeleteContact(chatId, rest)
@@ -345,8 +383,15 @@ async function cmdHelp(chatId: number) {
 
 <b>🏕 Chapters</b>
 /setchapter [id] status [value]
+/setchapter [id] venue [text]
+/setchapter [id] lead [name]
 /setchapter [id] pax [number]
+/setchapter [id] pax_target [number|clear]
+/setchapter [id] merch [text]
 /setchapter [id] progress [0-100]
+/setchapter [id] date [YYYY-MM-DD|clear]
+/setchapter [id] display_date [text|clear]
+/setcheck [id] [item-index] [done|pending|in_progress]
   <i>e.g.</i> <code>/setchapter manila status completed</code>
 
 <b>👥 Contacts</b>
@@ -504,6 +549,8 @@ async function cmdChapter(chatId: number, id: string) {
     return
   }
 
+  const dateDisplay = chapterDateForDisplay(chapter.date_iso, chapter.date_text)
+
   const taskLines = tasks?.length
     ? tasks.map(t => {
         const label = t.short_id ?? t.id.slice(0, 8)
@@ -513,7 +560,7 @@ async function cmdChapter(chatId: number, id: string) {
 
   await send(chatId, `<b>Chapter ${chapter.number}: ${chapter.name}</b>
 Status: ${chapter.status.replace(/_/g, ' ')}
-Date: ${chapter.date_text}
+Date: ${dateDisplay}
 Venue: ${chapter.venue}
 Lead: ${chapter.lead_name}
 Progress: ${chapter.progress_percent}%
@@ -809,12 +856,24 @@ async function cmdSetChapter(chatId: number, args: string) {
 
 Fields:
   <code>status</code> — completed · rescheduling · in_progress · activating · pencil_booked · tbc
+  <code>venue</code> — venue text
+  <code>lead</code> — lead name
   <code>pax</code>    — actual attendance number
+  <code>pax_target</code> — target attendance number (or clear)
+  <code>merch</code> — merch status text
   <code>progress</code> — 0–100
+  <code>date</code> — YYYY-MM-DD or clear
+  <code>display_date</code> — optional text label (or clear)
 
 <i>e.g.</i> <code>/setchapter manila status completed</code>
+<i>e.g.</i> <code>/setchapter manila venue Colegio de San Juan de Letran, Intramuros</code>
+<i>e.g.</i> <code>/setchapter manila lead Lady Diane Casilang</code>
 <i>e.g.</i> <code>/setchapter bukidnon pax 87</code>
-<i>e.g.</i> <code>/setchapter iloilo progress 60</code>`)
+<i>e.g.</i> <code>/setchapter iloilo pax_target 120</code>
+<i>e.g.</i> <code>/setchapter bukidnon merch ✓ Distributed</code>
+<i>e.g.</i> <code>/setchapter iloilo progress 60</code>
+<i>e.g.</i> <code>/setchapter manila date 2026-03-28</code>
+<i>e.g.</i> <code>/setchapter iloilo display_date Apr 18 (Dev Event) + May 16</code>`)
     return
   }
 
@@ -822,7 +881,7 @@ Fields:
   const value = rest.join(' ')
   const sb = db()
 
-  const { data: chapter } = await sb.from('chapters').select('id, name, number').eq('id', chapterId.toLowerCase()).single()
+  const { data: chapter } = await sb.from('chapters').select('id, name, number, date_iso, date_text').eq('id', chapterId.toLowerCase()).single()
   if (!chapter) {
     await send(chatId, `Chapter <code>${chapterId}</code> not found.\nValid IDs: manila · tacloban · iloilo · bukidnon · pampanga · laguna`)
     return
@@ -837,11 +896,43 @@ Fields:
       }
       update.status = value
       break
+    case 'venue': {
+      const text = value.trim()
+      if (!text) { await send(chatId, 'Venue cannot be empty.'); return }
+      update.venue = text
+      break
+    }
+    case 'lead':
+    case 'lead_name': {
+      const text = value.trim()
+      if (!text) { await send(chatId, 'Lead name cannot be empty.'); return }
+      update.lead_name = text
+      break
+    }
     case 'pax':
     case 'pax_actual': {
       const n = parseInt(value)
       if (isNaN(n) || n < 0) { await send(chatId, 'Pax must be a non-negative number.'); return }
       update.pax_actual = n
+      break
+    }
+    case 'target':
+    case 'pax_target': {
+      const text = value.trim().toLowerCase()
+      if (text === 'clear' || text === 'none') {
+        update.pax_target = null
+      } else {
+        const n = parseInt(value)
+        if (isNaN(n) || n < 0) { await send(chatId, 'Pax target must be a non-negative number or <code>clear</code>.'); return }
+        update.pax_target = n
+      }
+      break
+    }
+    case 'merch':
+    case 'merch_status': {
+      const text = value.trim()
+      if (!text) { await send(chatId, 'Merch status cannot be empty.'); return }
+      update.merch_status = text
       break
     }
     case 'progress': {
@@ -850,16 +941,114 @@ Fields:
       update.progress_percent = n
       break
     }
+    case 'event_date':
+    case 'date':
+    case 'date_iso': {
+      const v = value.trim().toLowerCase()
+      if (v === 'clear' || v === 'none') {
+        update.date_iso = null
+      } else if (/^\d{4}-\d{2}-\d{2}$/.test(value.trim())) {
+        update.date_iso = value.trim()
+      } else {
+        await send(chatId, 'Event date must be <code>YYYY-MM-DD</code> or <code>clear</code>.')
+        return
+      }
+      break
+    }
+    case 'display_date':
+    case 'date_text': {
+      const raw = value.trim()
+      if (!raw || raw.toLowerCase() === 'clear' || raw.toLowerCase() === 'none') {
+        update.date_text = ''
+      } else {
+        update.date_text = raw
+      }
+      break
+    }
     default:
-      await send(chatId, `Unknown field <code>${field}</code>. Use: status · pax · progress`)
+      await send(chatId, `Unknown field <code>${field}</code>. Use: status · venue · lead · pax · pax_target · merch · progress · date · display_date`)
       return
   }
 
   const { error } = await sb.from('chapters').update(update).eq('id', chapter.id)
   if (error) { await send(chatId, `❌ ${error.message}`); return }
 
+  const normalizedField = field.toLowerCase()
+  if (['event_date', 'date', 'date_iso', 'display_date', 'date_text'].includes(normalizedField)) {
+    const nextIso = (update.date_iso !== undefined ? update.date_iso : chapter.date_iso) as string | null
+    const nextText = (update.date_text !== undefined ? update.date_text : chapter.date_text) as string
+    const dateLabel = chapterDateForDisplay(nextIso, nextText)
+    await send(chatId, `✅ <b>Ch${chapter.number} ${chapter.name}</b>\nDate → <code>${dateLabel}</code>`)
+    return
+  }
+
   const fieldLabel = field === 'pax' || field === 'pax_actual' ? 'pax_actual' : field.toLowerCase()
   await send(chatId, `✅ <b>Ch${chapter.number} ${chapter.name}</b>\n${fieldLabel} → <code>${value}</code>`)
+}
+
+// ─── /setcheck ─────────────────────────────────────────────────────────────
+
+async function cmdSetChecklistActivity(chatId: number, args: string) {
+  const parts = args.split(/\s+/)
+  if (parts.length < 3) {
+    await send(chatId, `Usage: /setcheck [chapter-id] [item-index] [done|pending|in_progress]\n<i>e.g.</i> <code>/setcheck manila 0 done</code>`)
+    return
+  }
+
+  const [chapterIdRaw, itemKeyRaw, activityRaw] = parts
+  const chapterId = chapterIdRaw.toLowerCase()
+  const itemKey = itemKeyRaw.trim()
+  const activityStatus = activityRaw.toLowerCase().trim()
+
+  if (!['done', 'pending', 'in_progress'].includes(activityStatus)) {
+    await send(chatId, 'Activity status must be <code>done</code>, <code>pending</code>, or <code>in_progress</code>.')
+    return
+  }
+
+  const sb = db()
+  const { data: chapter } = await sb.from('chapters').select('id, number, name').eq('id', chapterId).single()
+  if (!chapter) {
+    await send(chatId, `Chapter <code>${chapterId}</code> not found.\nValid IDs: manila · tacloban · iloilo · bukidnon · pampanga · laguna`)
+    return
+  }
+
+  const SETTINGS_KEY = 'chapter_checklist_overrides'
+  const { data: existingRow, error: getError } = await sb
+    .from('bot_settings')
+    .select('value')
+    .eq('key', SETTINGS_KEY)
+    .maybeSingle()
+
+  if (getError) {
+    await send(chatId, `❌ ${getError.message}`)
+    return
+  }
+
+  const overrides = parseChecklistOverrides(existingRow?.value)
+  const chapterOverrides = overrides[chapterId] ?? {}
+  const prevEntry = chapterOverrides[itemKey] ?? {}
+  chapterOverrides[itemKey] = {
+    ...prevEntry,
+    activity_status: activityStatus,
+  }
+  overrides[chapterId] = chapterOverrides
+
+  const { error: upsertError } = await sb
+    .from('bot_settings')
+    .upsert([
+      {
+        key: SETTINGS_KEY,
+        value: JSON.stringify(overrides),
+        updated_at: new Date().toISOString(),
+      },
+    ], { onConflict: 'key' })
+
+  if (upsertError) {
+    await send(chatId, `❌ ${upsertError.message}`)
+    return
+  }
+
+  await send(chatId, `✅ <b>Ch${chapter.number} ${chapter.name}</b>\nChecklist item <code>${itemKey}</code> activity → <code>${activityStatus}</code>`)
 }
 
 // ─── /contacts ──────────────────────────────────────────────────────────────

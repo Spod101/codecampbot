@@ -18,6 +18,26 @@ export function db() {
   )
 }
 
+function formatDateIsoForDisplay(isoDate: string | null): string {
+  if (!isoDate) return ''
+  const date = new Date(`${isoDate}T00:00:00Z`)
+  return new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(date)
+}
+
+function chapterDateForDisplay(isoDate: string | null, dateText: string): string {
+  const primary = formatDateIsoForDisplay(isoDate)
+  const secondary = (dateText ?? '').trim()
+  if (primary && secondary && secondary !== primary) return `${primary} (${secondary})`
+  if (primary) return primary
+  if (secondary) return secondary
+  return 'TBD'
+}
+
 export async function buildDsuMessage(): Promise<string> {
   const sb = db()
 
@@ -27,7 +47,7 @@ export async function buildDsuMessage(): Promise<string> {
     { data: risks },
     { data: kpis },
   ] = await Promise.all([
-    sb.from('chapters').select('name, number, status, progress_percent, date_text').order('number'),
+    sb.from('chapters').select('name, number, status, progress_percent, date_text, date_iso').order('number'),
     sb.from('chapter_tasks').select('id, chapter_id, owner, description, status').neq('status', 'done'),
     sb.from('risks').select('code, title, owner, severity, status').eq('status', 'open').order('code'),
     sb.from('kpis').select('key, value'),
@@ -56,7 +76,7 @@ export async function buildDsuMessage(): Promise<string> {
 
   const chapterBlock = (chapters ?? [])
     .map(c => {
-      const date = c.status === 'completed' ? 'Done' : c.date_text
+      const date = c.status === 'completed' ? 'Done' : chapterDateForDisplay(c.date_iso, c.date_text)
       return `${statusIcon[c.status] ?? '•'} Ch${c.number} <b>${c.name}</b> — ${date} (${c.progress_percent}%)`
     })
     .join('\n')
