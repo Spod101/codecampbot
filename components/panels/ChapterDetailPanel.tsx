@@ -429,6 +429,7 @@ export default function ChapterDetailPanel({ chapterId, chapters, onBack, onRefr
   }
 
   function openProfileEditor() {
+    if (!chapter) return
     setProfileForm({
       name: chapter.name,
       city: chapter.city,
