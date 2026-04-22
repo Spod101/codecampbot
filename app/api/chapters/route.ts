@@ -36,7 +36,7 @@ export async function PATCH(req: NextRequest) {
   const hasDateTextPatch = typeof patch.date_text === 'string'
   if (hasDateTextPatch) {
     const text = patch.date_text.trim()
-    allowed.date_text = text || 'TBD'
+    allowed.date_text = text
   }
   if (patch.date_iso === null) {
     allowed.date_iso = null

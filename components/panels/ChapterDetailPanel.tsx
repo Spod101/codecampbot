@@ -37,9 +37,8 @@ interface ChecklistOverrideEntry {
   activity_status?: string
 }
 
-const DATE_STATUS_OPTIONS = ['upcoming', 'overdue', 'confirm', 'pending', 'in_progress', 'done', 'executed']
-const ACTIVITY_STATUS_OPTIONS = ['done', 'pending', 'in_progress', 'overdue', 'confirm', 'upcoming', 'executed']
-const CUSTOM_STATUS_VALUE = '__custom__'
+const DATE_STATUS_OPTIONS = ['upcoming', 'overdue', 'pending']
+const ACTIVITY_STATUS_OPTIONS = ['done', 'pending', 'in_progress']
 
 const CHECKLIST: Record<string, CheckItem[]> = {
   manila: [
@@ -147,6 +146,30 @@ function defaultActivityStatus(item: CheckItem): string {
   return 'pending'
 }
 
+function toActivityStatusChoice(raw: string): string {
+  const normalized = raw.trim().toLowerCase()
+  return ACTIVITY_STATUS_OPTIONS.includes(normalized) ? normalized : 'pending'
+}
+
+function scheduleStatusFromDate(dateText: string, activityStatus: string): string | null {
+  if (activityStatus === 'done') return null
+
+  const normalized = dateText.trim().toLowerCase()
+  if (!normalized || normalized === 'tbd' || normalized.includes('pending') || normalized.includes('in progress') || normalized.includes('urgent')) {
+    return 'pending'
+  }
+
+  const parsed = Date.parse(dateText)
+  if (Number.isNaN(parsed)) return 'pending'
+
+  const itemDate = new Date(parsed)
+  const today = new Date()
+  itemDate.setHours(0, 0, 0, 0)
+  today.setHours(0, 0, 0, 0)
+
+  return itemDate < today ? 'overdue' : 'upcoming'
+}
+
 /* ── relative time helper ────────────────────────────────────────────────── */
 function relativeDay(isoDate: string | null): string {
   if (!isoDate) return 'TBD'
@@ -156,15 +179,73 @@ function relativeDay(isoDate: string | null): string {
   return `${Math.abs(diff)} day${Math.abs(diff) !== 1 ? 's' : ''} ago`
 }
 
+function addBusinessDays(startUtc: Date, amount: number): Date {
+  if (amount === 0) return new Date(startUtc)
+
+  const result = new Date(startUtc)
+  const step = amount > 0 ? 1 : -1
+  let remaining = Math.abs(amount)
+
+  while (remaining > 0) {
+    result.setUTCDate(result.getUTCDate() + step)
+    const day = result.getUTCDay()
+    if (day !== 0 && day !== 6) remaining -= 1
+  }
+
+  return result
+}
+
+function formatChecklistDate(dateUtc: Date): string {
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: '2-digit',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(dateUtc)
+}
+
+function formatEventDateIso(isoDate: string | null): string {
+  if (!isoDate) return ''
+  const date = new Date(`${isoDate}T00:00:00Z`)
+  return new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(date)
+}
+
+function autoChecklistDate(eventIso: string | null, tCode: string, fallback: string): string {
+  if (!eventIso) return fallback
+
+  const base = new Date(`${eventIso}T00:00:00Z`)
+  const match = tCode.match(/T\s*([+-])\s*(\d+)/i)
+  if (!match) {
+    if (/^T\s*-\s*0/i.test(tCode) || /^T\s*0/i.test(tCode)) {
+      return formatChecklistDate(base)
+    }
+    return fallback
+  }
+
+  const sign = match[1] === '-' ? -1 : 1
+  const days = Number(match[2])
+  if (!Number.isFinite(days)) return fallback
+
+  const computed = addBusinessDays(base, sign * days)
+  return formatChecklistDate(computed)
+}
+
 /* ── Checklist row ───────────────────────────────────────────────────────── */
 function CheckRow({ item, onEdit }: { item: CheckItem; onEdit: () => void }) {
-  const dateStatus = checklistBadge(item.status)
-  const activityStatus = checklistBadge(defaultActivityStatus(item))
+  const activityStatusValue = toActivityStatusChoice(defaultActivityStatus(item))
+  const dateStatusValue = scheduleStatusFromDate(item.date, activityStatusValue)
+  const dateStatus = dateStatusValue ? checklistBadge(dateStatusValue) : null
+  const activityStatus = checklistBadge(activityStatusValue)
 
   return (
     <div
       style={{
-        display: 'grid', gridTemplateColumns: '52px 1fr auto auto auto', gap: '10px',
+        display: 'grid', gridTemplateColumns: dateStatus ? '52px 1fr auto auto auto' : '52px 1fr auto auto', gap: '10px',
         alignItems: 'center', padding: '13px 18px',
         background: item.isEvent ? 'rgba(6,182,212,0.04)' : '#0f172a',
         border: `1px solid ${item.isEvent ? 'rgba(6,182,212,0.2)' : '#1e293b'}`,
@@ -183,9 +264,11 @@ function CheckRow({ item, onEdit }: { item: CheckItem; onEdit: () => void }) {
         <div style={{ fontSize: '10px', color: '#475569' }}>{item.date}</div>
       </div>
       {/* Status pill */}
-      <span style={{ display: 'inline-flex', padding: '4px 10px', borderRadius: '8px', fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap', background: dateStatus.bg, color: dateStatus.color, border: `1px solid ${dateStatus.border}` }}>
-        {dateStatus.label}
-      </span>
+      {dateStatus && (
+        <span style={{ display: 'inline-flex', padding: '4px 10px', borderRadius: '8px', fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap', background: dateStatus.bg, color: dateStatus.color, border: `1px solid ${dateStatus.border}` }}>
+          {dateStatus.label}
+        </span>
+      )}
       <span style={{ display: 'inline-flex', padding: '4px 10px', borderRadius: '8px', fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap', background: activityStatus.bg, color: activityStatus.color, border: `1px solid ${activityStatus.border}` }}>
         {activityStatus.label}
       </span>
@@ -263,10 +346,8 @@ export default function ChapterDetailPanel({ chapterId, chapters, onBack, onRefr
   const [taskDesc, setTaskDesc] = useState('')
   const [taskSaving, setTaskSaving] = useState(false)
   const [checklistOverrides, setChecklistOverrides] = useState<Record<string, ChecklistOverrideEntry>>({})
-  const [checkEdit, setCheckEdit] = useState<{ index: number; date_status: string; activity_status: string } | null>(null)
+  const [checkEdit, setCheckEdit] = useState<{ index: number; activity_status: string } | null>(null)
   const [checkEditSaving, setCheckEditSaving] = useState(false)
-  const [checkDateCustom, setCheckDateCustom] = useState('')
-  const [checkActivityCustom, setCheckActivityCustom] = useState('')
 
   // Sync todos when parent refreshes
   useEffect(() => {
@@ -297,10 +378,13 @@ export default function ChapterDetailPanel({ chapterId, chapters, onBack, onRefr
   const sb      = statusBadge[chapter.status]
   const checklist = (CHECKLIST[chapterId] ?? []).map((item, index) => {
     const override = checklistOverrides[String(index)]
-    if (!override) return item
-    return {
+    const baseItem = {
       ...item,
-      status: override.date_status?.trim() ? override.date_status : item.status,
+      date: autoChecklistDate(chapter.date_iso, item.tCode, item.date),
+    }
+    if (!override) return baseItem
+    return {
+      ...baseItem,
       activity_status: override.activity_status?.trim() ? override.activity_status : item.activity_status,
     }
   })
@@ -404,7 +488,7 @@ export default function ChapterDetailPanel({ chapterId, chapters, onBack, onRefr
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         id: chapter.id,
-        date_text: scheduleForm.date_text.trim() || 'TBD',
+        date_text: scheduleForm.date_text.trim(),
         date_iso: scheduleForm.date_iso.trim() || null,
       }),
     })
@@ -462,45 +546,29 @@ export default function ChapterDetailPanel({ chapterId, chapters, onBack, onRefr
   }
 
   function openChecklistEditor(index: number, item: CheckItem) {
-    const dateStatus = item.status.trim()
-    const activityStatus = defaultActivityStatus(item).trim()
-    const dateKnown = DATE_STATUS_OPTIONS.includes(dateStatus)
-    const activityKnown = ACTIVITY_STATUS_OPTIONS.includes(activityStatus)
-
-    setCheckDateCustom(dateKnown ? '' : dateStatus)
-    setCheckActivityCustom(activityKnown ? '' : activityStatus)
+    const activityStatus = toActivityStatusChoice(defaultActivityStatus(item))
     setCheckEdit({
       index,
-      date_status: dateKnown ? dateStatus : CUSTOM_STATUS_VALUE,
-      activity_status: activityKnown ? activityStatus : CUSTOM_STATUS_VALUE,
+      activity_status: activityStatus,
     })
   }
 
   async function saveChecklistStatuses() {
     if (!checkEdit) return
 
-    const resolvedDateStatus = checkEdit.date_status === CUSTOM_STATUS_VALUE
-      ? checkDateCustom.trim()
-      : checkEdit.date_status.trim()
-    const resolvedActivityStatus = checkEdit.activity_status === CUSTOM_STATUS_VALUE
-      ? checkActivityCustom.trim()
-      : checkEdit.activity_status.trim()
-
     const idx = String(checkEdit.index)
     const payload = {
       chapter_id: chapterId,
       item_index: checkEdit.index,
-      date_status: resolvedDateStatus,
-      activity_status: resolvedActivityStatus,
+      activity_status: toActivityStatusChoice(checkEdit.activity_status),
     }
-    if (!payload.date_status || !payload.activity_status) return
+    if (!payload.activity_status) return
 
     const prev = checklistOverrides[idx]
     setCheckEditSaving(true)
     setChecklistOverrides(current => ({
       ...current,
       [idx]: {
-        date_status: payload.date_status,
         activity_status: payload.activity_status,
       },
     }))
@@ -531,9 +599,14 @@ export default function ChapterDetailPanel({ chapterId, chapters, onBack, onRefr
   const liqLabel  = liqStatus === 'done' ? '✓ Settled' : liqStatus === 'confirm' ? '⚠ Confirm' : liqStatus === 'overdue' ? '⚠ Overdue' : '— TBD'
   const liqColor  = liqStatus === 'done' ? '#14b8a6' : liqStatus === 'overdue' ? '#e11d48' : liqStatus === 'confirm' ? '#f59e0b' : '#475569'
 
+  const isoEventDate = formatEventDateIso(chapter.date_iso)
+  const displayDateText = chapter.date_text.trim()
+  const eventDatePrimary = isoEventDate || displayDateText || 'TBD'
+  const eventDateSecondary = displayDateText && displayDateText !== eventDatePrimary ? displayDateText : ''
+
   /* Stat tiles */
   const statTiles = [
-    { label: 'Event Date',  value: chapter.date_text || 'TBD',                                      color: accent           },
+    { label: 'Event Date',  value: eventDatePrimary,                                                 color: accent           },
     { label: 'Countdown',   value: relDay,                                                            color: '#8899aa'        },
     { label: 'Pax Target',  value: chapter.pax_target ? String(chapter.pax_target) : 'TBD',         color: accent           },
     { label: 'Actual Pax',  value: chapter.pax_actual ? String(chapter.pax_actual) : 'TBC ⚠',       color: chapter.pax_actual ? '#14b8a6' : '#f59e0b' },
@@ -599,7 +672,7 @@ export default function ChapterDetailPanel({ chapterId, chapters, onBack, onRefr
 
         {/* Date / venue / lead */}
         <div style={{ fontSize: '12px', color: '#64748b', lineHeight: 2 }}>
-          {chapter.date_text} · {chapter.venue}<br />
+          {eventDatePrimary}{eventDateSecondary ? ` · ${eventDateSecondary}` : ''}{chapter.venue ? ` · ${chapter.venue}` : ''}<br />
           <span style={{ color: '#475569' }}>Lead: {chapter.lead_name}</span>
         </div>
 
@@ -641,9 +714,9 @@ export default function ChapterDetailPanel({ chapterId, chapters, onBack, onRefr
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
             <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#64748b', margin: 0 }}>
               Event Countdown Checklist
-              {chapter.date_iso && (
+              {eventDatePrimary && (
                 <span style={{ color: '#334155', marginLeft: '10px' }}>
-                  · {chapter.date_text}{chapter.venue ? ' · ' + chapter.venue.split(',')[0] : ''}
+                  · {eventDatePrimary}{eventDateSecondary ? ` · ${eventDateSecondary}` : ''}{chapter.venue ? ' · ' + chapter.venue.split(',')[0] : ''}
                 </span>
               )}
             </p>
@@ -827,7 +900,7 @@ export default function ChapterDetailPanel({ chapterId, chapters, onBack, onRefr
       {/* Edit schedule slide-over */}
       <SlideOver open={scheduleOpen} onClose={() => setScheduleOpen(false)} title="Edit Schedule">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <FormField label="Date Display Text">
+          <FormField label="Display Text (Optional)">
             <FieldInput
               placeholder="e.g. Apr 18 (Dev Event) + May 16"
               value={scheduleForm.date_text}
@@ -898,26 +971,6 @@ export default function ChapterDetailPanel({ chapterId, chapters, onBack, onRefr
       {/* Edit checklist statuses */}
       <SlideOver open={checkEdit !== null} onClose={() => setCheckEdit(null)} title="Edit Checklist Status">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <FormField label="Date Status">
-            <FieldSelect
-              value={checkEdit?.date_status ?? ''}
-              onChange={e => setCheckEdit(prev => prev ? { ...prev, date_status: e.target.value } : prev)}
-            >
-              {DATE_STATUS_OPTIONS.map(option => (
-                <option key={option} value={option}>{statusOptionLabel(option)}</option>
-              ))}
-              <option value={CUSTOM_STATUS_VALUE}>Custom...</option>
-            </FieldSelect>
-          </FormField>
-          {checkEdit?.date_status === CUSTOM_STATUS_VALUE && (
-            <FormField label="Custom Date Status">
-              <FieldInput
-                placeholder="Type custom date status"
-                value={checkDateCustom}
-                onChange={e => setCheckDateCustom(e.target.value)}
-              />
-            </FormField>
-          )}
           <FormField label="Activity Status">
             <FieldSelect
               value={checkEdit?.activity_status ?? ''}
@@ -926,25 +979,11 @@ export default function ChapterDetailPanel({ chapterId, chapters, onBack, onRefr
               {ACTIVITY_STATUS_OPTIONS.map(option => (
                 <option key={option} value={option}>{statusOptionLabel(option)}</option>
               ))}
-              <option value={CUSTOM_STATUS_VALUE}>Custom...</option>
             </FieldSelect>
           </FormField>
-          {checkEdit?.activity_status === CUSTOM_STATUS_VALUE && (
-            <FormField label="Custom Activity Status">
-              <FieldInput
-                placeholder="Type custom activity status"
-                value={checkActivityCustom}
-                onChange={e => setCheckActivityCustom(e.target.value)}
-              />
-            </FormField>
-          )}
           <button
             onClick={saveChecklistStatuses}
-            disabled={
-              checkEditSaving
-              || (checkEdit?.date_status === CUSTOM_STATUS_VALUE && !checkDateCustom.trim())
-              || (checkEdit?.activity_status === CUSTOM_STATUS_VALUE && !checkActivityCustom.trim())
-            }
+            disabled={checkEditSaving || !checkEdit?.activity_status}
             style={{ padding: '10px', borderRadius: '10px', background: checkEditSaving ? '#1e293b' : 'linear-gradient(135deg,#06b6d4,#14b8a6)', border: 'none', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: checkEditSaving ? 'wait' : 'pointer' }}
           >
             {checkEditSaving ? 'Saving…' : 'Save Checklist Status'}
@@ -981,7 +1020,7 @@ export default function ChapterDetailPanel({ chapterId, chapters, onBack, onRefr
           <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#64748b', marginBottom: '14px' }}>Post-Event SITREP Template</p>
           <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '18px', padding: '24px' }}>
             <pre style={{ fontSize: '10px', color: '#64748b', lineHeight: 1.9, whiteSpace: 'pre-wrap', margin: 0 }}>{`EVENT SITREP — ${chapter.name}
-Date:         ${chapter.date_text}
+Date:         ${eventDatePrimary}${eventDateSecondary ? ` (${eventDateSecondary})` : ''}
 Lead:         ${chapter.lead_name}
 Actual pax:   [number] (target: ${chapter.pax_target ?? 'TBC'})
 Session:      [Part 1 only / Part 1 + Dinner]

@@ -86,11 +86,8 @@ export async function PATCH(req: NextRequest) {
 
   if (!chapterId) return NextResponse.json({ ok: false, error: 'chapter_id is required' }, { status: 400 })
   if (!itemIndex) return NextResponse.json({ ok: false, error: 'item_index is required' }, { status: 400 })
-  if (!dateStatus) {
-    return NextResponse.json({ ok: false, error: 'date_status is required' }, { status: 400 })
-  }
-  if (!activityStatus) {
-    return NextResponse.json({ ok: false, error: 'activity_status is required' }, { status: 400 })
+  if (!dateStatus && !activityStatus) {
+    return NextResponse.json({ ok: false, error: 'At least one status field is required' }, { status: 400 })
   }
 
   let supabase
@@ -109,9 +106,10 @@ export async function PATCH(req: NextRequest) {
 
   const overrides = parseOverrides(existing?.value)
   const chapterOverrides = overrides[chapterId] ?? {}
+  const currentEntry = chapterOverrides[itemIndex] ?? {}
   chapterOverrides[itemIndex] = {
-    date_status: dateStatus,
-    activity_status: activityStatus,
+    date_status: dateStatus || currentEntry.date_status,
+    activity_status: activityStatus || currentEntry.activity_status,
   }
   overrides[chapterId] = chapterOverrides
 
