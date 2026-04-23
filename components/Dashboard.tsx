@@ -355,6 +355,14 @@ function BentoSection({ kpis, risks, chapters, onSwitch }: { kpis: Kpi[]; risks:
   const openRisks    = risks.filter(r => r.status === 'open').length
   const completedCnt = chapters.filter(c => c.status === 'completed').length
 
+  // Calculate days left in Q2 2026 (ends June 30, 2026)
+  const q2End = new Date(2026, 5, 30) // Month is 0-indexed, so 5 = June
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  q2End.setHours(0, 0, 0, 0)
+  const daysLeftQ2 = Math.ceil((q2End.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+  const daysLeftStr = daysLeftQ2 > 0 ? `${daysLeftQ2}d` : '0d'
+
   const skillItems = [
     { icon:'📊', label:'Code Camps',       value:kpiMap['code_camps']?.value          ?? '–', color:C.cyan },
     { icon:'📋', label:'Form Submissions', value:kpiMap['form_submissions']?.value     ?? '–', color:C.teal },
@@ -367,7 +375,7 @@ function BentoSection({ kpis, risks, chapters, onSwitch }: { kpis: Kpi[]; risks:
     { label:'Chapters Done',   value:`${completedCnt}/${chapters.length}`,   color:C.teal },
     { label:'Open Risks',      value:String(openRisks || '0'),               color:C.rose },
     { label:'Labs Active',     value:kpiMap['computer_labs']?.value ?? '–',  color:C.cyan },
-    { label:'Days Left Q2',    value:'78d',                                  color:'#f59e0b' },
+    { label:'Days Left Q2',    value:daysLeftStr,                            color:'#f59e0b' },
   ]
 
   return (
@@ -611,6 +619,15 @@ export default function Dashboard({ initialChapterId }: DashboardProps) {
   }, [])
 
   useEffect(() => { refresh() }, [refresh])
+
+  // Poll for stats updates every 30 seconds
+  useEffect(() => {
+    const pollInterval = setInterval(() => {
+      refresh()
+    }, 30000) // 30 seconds
+
+    return () => clearInterval(pollInterval)
+  }, [refresh])
 
   const updateTabUrl = useCallback((tab: TabId) => {
     const params = new URLSearchParams(searchParams.toString())
