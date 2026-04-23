@@ -1,5 +1,4 @@
 import { createAdminClient } from '@/lib/supabase/admin'
-import { buildDsuMessage } from '@/lib/telegram/dsu'
 
 const noStoreFetch: typeof fetch = (input, init) => {
   return fetch(input, {
@@ -22,6 +21,9 @@ type ChecklistOverrideEntry = { date_status?: string; activity_status?: string }
 type ChecklistOverrides = Record<string, Record<string, ChecklistOverrideEntry>>
 
 type PageView = 'status' | 'tasks' | 'risks' | 'kpis' | 'contacts' | 'merch'
+type DsuCallbackPayload =
+  | { kind: 'overview' }
+  | { kind: 'chapter'; chapterId: string }
 
 type TgMessage = {
   message_id: number
@@ -99,6 +101,14 @@ function callbackPayload(view: PageView, page: number, filter?: string) {
   return `pg|${view}|${encodeFilter(filter)}|${page}`
 }
 
+function dsuOverviewCallbackPayload() {
+  return 'dsu|overview'
+}
+
+function dsuChapterCallbackPayload(chapterId: string) {
+  return `dsu|chapter|${chapterId.toLowerCase()}`
+}
+
 function formatDateIsoForDisplay(isoDate: string | null): string {
   if (!isoDate) return ''
   const date = new Date(`${isoDate}T00:00:00Z`)
@@ -151,6 +161,53 @@ function parseCallbackPayload(data: string): { view: PageView; page: number; fil
   }
 }
 
+function parseDsuCallbackPayload(data: string): DsuCallbackPayload | null {
+  const parts = data.split('|')
+  if (parts.length < 2 || parts[0] !== 'dsu') return null
+
+  if (parts[1] === 'overview') {
+    return { kind: 'overview' }
+  }
+
+  if (parts.length === 3 && parts[1] === 'chapter') {
+    const chapterId = parts[2].trim().toLowerCase()
+    if (!chapterId) return null
+    return { kind: 'chapter', chapterId }
+  }
+
+  return null
+}
+
+function chapterShortcut(chapterId: string, chapterName: string): string {
+  const known = CHAPTER_CODES[chapterId.toLowerCase()]
+  if (known) return known
+  const compact = chapterName
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(part => part[0]?.toUpperCase() ?? '')
+    .join('')
+    .slice(0, 4)
+  return compact || chapterId.slice(0, 3).toUpperCase()
+}
+
+function chapterStatusLabel(status: string): string {
+  return status.replace(/_/g, ' ')
+}
+
+function chapterDateIsLocked(isoDate: string | null, dateText: string): boolean {
+  if (isoDate) return true
+  const normalized = dateText.trim().toLowerCase()
+  if (!normalized) return false
+  if (normalized.includes('tbd') || normalized.includes('tbc')) return false
+  return true
+}
+
+function operationalCheckLabel(isDone: boolean, label: string, pendingDetail?: string) {
+  if (isDone) return `✅ ${label}: done`
+  if (pendingDetail) return `⚠️ ${label}: pending (${pendingDetail})`
+  return `⚠️ ${label}: pending`
+}
+
 function pagerMarkup(view: PageView, page: number, totalPages: number, filter?: string): InlineKeyboardMarkup | undefined {
   if (totalPages <= 1) return undefined
 
@@ -191,6 +248,170 @@ async function sendOrEdit(
   }
 
   await send(chatId, text, replyMarkup)
+}
+
+function buildDsuChaptersKeyboard(chapters: { id: string; name: string }[]): InlineKeyboardMarkup {
+  const buttons = chapters.map(ch => ({
+    text: chapterShortcut(ch.id, ch.name),
+    callback_data: dsuChapterCallbackPayload(ch.id),
+  }))
+
+  const rows: InlineKeyboardButton[][] = []
+  for (let i = 0; i < buttons.length; i += 3) {
+    rows.push(buttons.slice(i, i + 3))
+  }
+
+  return { inline_keyboard: rows }
+}
+
+async function buildDsuOverview() {
+  const sb = db()
+  const [{ data: chapters }, { data: tasks }, { data: kpis }] = await Promise.all([
+    sb.from('chapters').select('id, name, number, status, progress_percent').order('number'),
+    sb.from('chapter_tasks').select('chapter_id, owner, description, status').neq('status', 'done'),
+    sb.from('kpis').select('key, value').in('key', ['code_camps', 'form_submissions', 'trained_mentors', 'confirmed_deployments', 'completion_rate', 'computer_labs']),
+  ])
+
+  const chapterRows = chapters ?? []
+  const openTasks = tasks ?? []
+  const urgentTasks = openTasks.filter(t => t.status === 'urgent')
+  const kpiMap = Object.fromEntries((kpis ?? []).map(k => [k.key, k.value]))
+
+  const now = new Date().toLocaleDateString('en-PH', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+    timeZone: 'Asia/Manila',
+  })
+
+  const statusIcon: Record<string, string> = {
+    completed: '✅',
+    rescheduling: '⚠️',
+    in_progress: '🔄',
+    pencil_booked: '📌',
+    tbc: '🟣',
+    activating: '🟡',
+  }
+
+  const chapterProgress = chapterRows.length
+    ? chapterRows
+        .map(ch => {
+          const shortcut = chapterShortcut(ch.id, ch.name)
+          return `${statusIcon[ch.status] ?? '•'} <b>${shortcut}</b> ${ch.progress_percent}% · ${chapterStatusLabel(ch.status)}`
+        })
+        .join('\n')
+    : 'No chapters found.'
+
+  const urgentBlock = urgentTasks.length
+    ? urgentTasks
+        .slice(0, 6)
+        .map(t => `🔴 <b>${t.chapter_id.toUpperCase()}</b> · <b>${t.owner}</b>: ${t.description}`)
+        .join('\n')
+    : 'None'
+
+  const text = `<b>📝 DEVCON × Sui — Morning DSU</b>
+<i>${now}</i>
+━━━━━━━━━━━━━━━━━━━━
+
+<b>📊 KPI Snapshot</b>
+• Code Camps: <b>${kpiMap['code_camps'] ?? '–'}</b>
+• Form Submissions: <b>${kpiMap['form_submissions'] ?? '–'}</b>
+• Mentors Trained: <b>${kpiMap['trained_mentors'] ?? '–'}</b>
+• Deployments: <b>${kpiMap['confirmed_deployments'] ?? '–'}</b>
+• Completion Rate: <b>${kpiMap['completion_rate'] ?? '–'}</b>
+• Labs Activated: <b>${kpiMap['computer_labs'] ?? '–'}</b>
+
+<b>🏕 Chapter Progress</b>
+${chapterProgress}
+
+<b>✅ Urgent Tasks</b> (${urgentTasks.length} urgent · ${openTasks.length} total open)
+${urgentBlock}
+
+<i>Tap a chapter shortcut below for detailed chapter status.</i>`
+
+  const keyboard = buildDsuChaptersKeyboard(chapterRows)
+  return { text, keyboard }
+}
+
+async function buildChapterDetailStatus(chapterId: string) {
+  const sb = db()
+  const [{ data: chapter }, { data: openTasks }, { data: risks }] = await Promise.all([
+    sb.from('chapters').select('id, number, name, status, progress_percent, date_iso, date_text, venue, lead_name').eq('id', chapterId).single(),
+    sb.from('chapter_tasks').select('short_id, owner, description, status').eq('chapter_id', chapterId).neq('status', 'done').order('status', { ascending: false }),
+    sb.from('risks').select('code, title, severity, status, chapter_tag').eq('status', 'open').order('code'),
+  ])
+
+  if (!chapter) {
+    return {
+      text: `Chapter <code>${chapterId}</code> not found.`,
+      keyboard: {
+        inline_keyboard: [[{ text: '⬅️ DSU Overview', callback_data: dsuOverviewCallbackPayload() }]],
+      } as InlineKeyboardMarkup,
+    }
+  }
+
+  const pendingTasks = openTasks ?? []
+  const chapterRisks = (risks ?? []).filter(r => {
+    const tag = (r.chapter_tag ?? '').toLowerCase()
+    return tag.includes(chapter.id.toLowerCase()) || tag.includes(chapter.name.toLowerCase())
+  })
+
+  const dateLabel = chapterDateForDisplay(chapter.date_iso, chapter.date_text)
+  const isDateLocked = chapterDateIsLocked(chapter.date_iso, chapter.date_text)
+  const statusLabel = chapterStatusLabel(chapter.status)
+
+  const installationTask = pendingTasks.find(t => /(install|lab)/i.test(t.description))
+  const trainingTask = pendingTasks.find(t => /(train|dry run|mentor)/i.test(t.description))
+
+  const installationDone = chapter.status === 'completed' || !installationTask
+  const trainingDone = chapter.status === 'completed' || !trainingTask
+
+  const checksBlock = [
+    operationalCheckLabel(isDateLocked, 'Date Lock', isDateLocked ? undefined : 'event date still TBD'),
+    operationalCheckLabel(installationDone, 'Installation', installationTask?.description),
+    operationalCheckLabel(trainingDone, 'Training/Dry Run', trainingTask?.description),
+  ].join('\n')
+
+  const taskLines = pendingTasks.length
+    ? pendingTasks
+        .slice(0, 6)
+        .map(t => {
+          const icon = t.status === 'urgent' ? '🔴' : '🟡'
+          const label = t.short_id ?? 'task'
+          return `${icon} <code>${label}</code> · <b>${t.owner}</b>: ${t.description} <i>(${t.status})</i>`
+        })
+        .join('\n')
+    : '✅ No open tasks'
+
+  const sevIcon: Record<string, string> = { high: '🔴', medium: '🟡', low: '🟢' }
+  const riskLines = chapterRisks.length
+    ? chapterRisks
+        .slice(0, 4)
+        .map(r => `${sevIcon[r.severity] ?? '•'} <b>${r.code}</b>: ${r.title}`)
+        .join('\n')
+    : '✅ No open risks'
+
+  const shortcut = chapterShortcut(chapter.id, chapter.name)
+  const keyboard: InlineKeyboardMarkup = {
+    inline_keyboard: [
+      [{ text: '⬅️ DSU Overview', callback_data: dsuOverviewCallbackPayload() }],
+    ],
+  }
+
+  const text = `<b>🏕 ${shortcut} · Ch${chapter.number} ${chapter.name}</b>
+Status: <b>${statusLabel}</b> · Progress: <b>${chapter.progress_percent}%</b>
+Date: <b>${dateLabel}</b>
+Venue: ${chapter.venue || 'TBD'}
+Lead: ${chapter.lead_name || 'TBD'}
+
+<b>Operational Checks</b>
+${checksBlock}
+
+<b>Open Tasks</b> (${pendingTasks.length})
+${taskLines}
+
+<b>Open Risks</b> (${chapterRisks.length})
+${riskLines}`
+
+  return { text, keyboard }
 }
 
 // ─── Entry point ────────────────────────────────────────────────────────────
@@ -256,6 +477,23 @@ export async function handleUpdate(update: unknown) {
 
 async function handleCallbackQuery(cb: TgCallbackQuery) {
   if (!cb.data || !cb.message) {
+    await answerCallbackQuery(cb.id)
+    return
+  }
+
+  const dsuPayload = parseDsuCallbackPayload(cb.data)
+  if (dsuPayload) {
+    const chatId: number = cb.message.chat.id
+    const messageId: number = cb.message.message_id
+
+    if (dsuPayload.kind === 'overview') {
+      const overview = await buildDsuOverview()
+      await sendOrEdit(chatId, overview.text, overview.keyboard, { messageId })
+    } else {
+      const detail = await buildChapterDetailStatus(dsuPayload.chapterId)
+      await sendOrEdit(chatId, detail.text, detail.keyboard, { messageId })
+    }
+
     await answerCallbackQuery(cb.id)
     return
   }
@@ -408,8 +646,8 @@ async function cmdHelp(chatId: number) {
 // ─── /status ────────────────────────────────────────────────────────────────
 
 async function cmdStatus(chatId: number) {
-  const text = await buildDsuMessage()
-  await send(chatId, text)
+  const overview = await buildDsuOverview()
+  await send(chatId, overview.text, overview.keyboard)
 }
 
 // Legacy compact dashboard renderer retained for callback paging compatibility.
