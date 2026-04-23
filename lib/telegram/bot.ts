@@ -387,7 +387,7 @@ async function cmdHelp(chatId: number) {
 /setchapter [chapter] lead [name]
 /setchapter [chapter] pax [number]
 /setchapter [chapter] pax_target [number|clear]
-/setchapter [chapter] merch [not_sent|pending|received|in_transit|other <text>]
+/setchapter [chapter] merch [not_sent|pending|received|in_transit|other &lt;text&gt;]
 /setchapter [chapter] progress [0-100]
 /setchapter [chapter] date [YYYY-MM-DD|clear]
 /setchapter [chapter] display_date [text|clear]
