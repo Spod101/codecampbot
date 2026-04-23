@@ -21,10 +21,13 @@ function itemBadge(s: string): { variant: BadgeVariant; label: string } {
 }
 
 function getMerchBadge(s: string): { variant: BadgeVariant; label: string } {
-  if (s.startsWith('✓'))                                     return { variant: 'done', label: s }
-  if (s.includes('TBC') || s.toLowerCase().includes('tbc')) return { variant: 'tbc',  label: s }
-  if (s.includes('Not Yet'))                                 return { variant: 'risk', label: s }
-  return                                                            { variant: 'warn', label: s }
+  const lower = s.toLowerCase().trim()
+  if (lower === 'received' || lower.includes('received by chapter')) return { variant: 'done', label: s }
+  if (lower === 'in transit' || lower.includes('in transit') || lower === 'sent' || lower.includes('sent to province')) return { variant: 'warn', label: s }
+  if (lower === 'pending' || lower === 'ready to ship') return { variant: 'pending', label: s }
+  if (s.includes('TBC') || lower.includes('tbc')) return { variant: 'tbc',  label: s }
+  if (lower === 'not sent' || lower.includes('not yet sent')) return { variant: 'risk', label: s }
+  return { variant: 'warn', label: s }
 }
 
 const CARD: React.CSSProperties = {
@@ -65,6 +68,7 @@ function ItemRows({ items, icon, onEdit, onDelete }: { items: MerchItem[]; icon:
 }
 
 const BLANK = { name: '', quantity: '1', distribution: '', status: 'pending', category: 'jcr' }
+const CHAPTER_MERCH_STATUSES = ['not sent', 'pending', 'in transit', 'received'] as const
 
 export default function MerchPanel({ merch_items, chapters, onRefresh }: { merch_items: MerchItem[]; chapters: Chapter[]; onRefresh: () => Promise<void> }) {
   const [slideOpen, setSlideOpen] = useState(false)
@@ -72,12 +76,20 @@ export default function MerchPanel({ merch_items, chapters, onRefresh }: { merch
   const [form, setForm] = useState(BLANK)
   const [saving, setSaving] = useState(false)
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [editChapter, setEditChapter] = useState<Chapter | null>(null)
+  const [merchStatusSelection, setMerchStatusSelection] = useState<string>(CHAPTER_MERCH_STATUSES[0])
+  const [customMerchStatus, setCustomMerchStatus] = useState('')
+  const [savingMerchStatus, setSavingMerchStatus] = useState(false)
+  const [hoverId, setHoverId] = useState<string | null>(null)
 
   const jcr    = merch_items.filter(m => m.category === 'jcr')
   const lazada = merch_items.filter(m => m.category === 'lazada')
   const shopee = merch_items.filter(m => m.category === 'shopee')
 
-  const received = chapters.filter(c => c.merch_status.startsWith('✓')).length
+  const received = chapters.filter(c => {
+    const status = c.merch_status.toLowerCase().trim()
+    return status === 'received' || status.includes('received by chapter')
+  }).length
   const pending  = chapters.length - received
 
   function openAdd(category: string) {
@@ -90,6 +102,62 @@ export default function MerchPanel({ merch_items, chapters, onRefresh }: { merch
     setEditItem(item)
     setForm({ name: item.name, quantity: String(item.quantity), distribution: item.distribution, status: item.status, category: item.category })
     setSlideOpen(true)
+  }
+
+  function openEditChapter(c: Chapter) {
+    setEditChapter(c)
+    const status = c.merch_status.trim()
+    const statusLower = status.toLowerCase()
+
+    if (statusLower === '✓ sent' || statusLower === 'sent' || statusLower === 'sent to province' || statusLower === 'in transit to province' || statusLower === 'in transit') {
+      setMerchStatusSelection('in transit')
+      setCustomMerchStatus('')
+      return
+    }
+
+    if (statusLower === 'ready to ship' || statusLower === 'pending') {
+      setMerchStatusSelection('pending')
+      setCustomMerchStatus('')
+      return
+    }
+
+    if (statusLower === 'not yet sent' || statusLower === 'not sent') {
+      setMerchStatusSelection('not sent')
+      setCustomMerchStatus('')
+      return
+    }
+
+    if (statusLower === 'received by chapter' || statusLower === 'received') {
+      setMerchStatusSelection('received')
+      setCustomMerchStatus('')
+      return
+    }
+
+    if (CHAPTER_MERCH_STATUSES.includes(statusLower as (typeof CHAPTER_MERCH_STATUSES)[number])) {
+      setMerchStatusSelection(statusLower)
+      setCustomMerchStatus('')
+      return
+    }
+    setMerchStatusSelection('other')
+    setCustomMerchStatus(c.merch_status)
+  }
+
+  async function saveMerchStatus() {
+    if (!editChapter) return
+    const merchStatus = merchStatusSelection === 'other' ? customMerchStatus.trim() : merchStatusSelection
+    if (!merchStatus) return
+    setSavingMerchStatus(true)
+    await fetch('/api/chapters', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: editChapter.id,
+        merch_status: merchStatus,
+      }),
+    })
+    await onRefresh()
+    setSavingMerchStatus(false)
+    setEditChapter(null)
   }
 
   async function save() {
@@ -123,8 +191,8 @@ export default function MerchPanel({ merch_items, chapters, onRefresh }: { merch
       {/* Stat tiles */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: '16px' }}>
         {[
-          { n: received,      lbl: 'Chapters Ready',    color: '#14b8a6', bg: 'rgba(20,184,166,0.08)',  border: 'rgba(20,184,166,0.25)'  },
-          { n: pending,       lbl: 'Pending / Not Sent',color: '#f59e0b', bg: 'rgba(245,158,11,0.08)',  border: 'rgba(245,158,11,0.25)'  },
+          { n: received,      lbl: 'Received by Chapter', color: '#14b8a6', bg: 'rgba(20,184,166,0.08)',  border: 'rgba(20,184,166,0.25)'  },
+          { n: pending,       lbl: 'Not Received Yet',    color: '#f59e0b', bg: 'rgba(245,158,11,0.08)',  border: 'rgba(245,158,11,0.25)'  },
           { n: 25,            lbl: 'VIP Kits Total',    color: '#06b6d4', bg: 'rgba(6,182,212,0.08)',   border: 'rgba(6,182,212,0.25)'   },
         ].map(s => (
           <div key={s.lbl} style={{ background: s.bg, border: `1px solid ${s.border}`, borderRadius: '20px', padding: '28px', textAlign: 'center' }}>
@@ -149,12 +217,13 @@ export default function MerchPanel({ merch_items, chapters, onRefresh }: { merch
             {chapters.map(c => {
               const m = getMerchBadge(c.merch_status)
               return (
-                <div key={c.id} style={{ display: 'grid', gridTemplateColumns: '28px 1fr auto', gap: '12px', alignItems: 'center', padding: '16px 20px', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', transition: 'border-color .2s' }}
-                  onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(6,182,212,0.3)')}
-                  onMouseLeave={e => (e.currentTarget.style.borderColor = '#1e293b')}>
+                <div key={c.id} style={{ display: 'grid', gridTemplateColumns: '28px 1fr auto auto', gap: '12px', alignItems: 'center', padding: '16px 20px', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', transition: 'border-color .2s' }}
+                  onMouseEnter={e => { (e.currentTarget.style.borderColor = 'rgba(6,182,212,0.3)'); setHoverId(c.id) }}
+                  onMouseLeave={e => { (e.currentTarget.style.borderColor = '#1e293b'); setHoverId(null) }}>
                   <span style={{ fontSize: '11px', color: '#475569', fontFamily: 'monospace', fontWeight: 700 }}>{c.number}</span>
                   <span style={{ fontSize: '12px', fontWeight: 600, color: '#cfd5dd' }}>{c.name}</span>
                   <Badge variant={m.variant} size="sm">{m.label}</Badge>
+                  <button onClick={() => openEditChapter(c)} style={{ padding: '3px 7px', borderRadius: '6px', background: 'rgba(6,182,212,0.08)', border: '1px solid rgba(6,182,212,0.25)', color: '#06b6d4', fontSize: '10px', cursor: 'pointer', opacity: hoverId === c.id ? 1 : 0, transition: 'opacity .15s' }}>✎</button>
                 </div>
               )
             })}
@@ -248,6 +317,42 @@ export default function MerchPanel({ merch_items, chapters, onRefresh }: { merch
             {saving ? 'Saving…' : editItem ? 'Save Changes' : 'Add Item'}
           </button>
         </div>
+      </SlideOver>
+
+      {/* Edit Chapter Merch Status slide-over */}
+      <SlideOver open={editChapter !== null} onClose={() => setEditChapter(null)} title={editChapter ? `Edit ${editChapter.name} Merch Status` : 'Edit Merch Status'}>
+        {editChapter && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <FormField label="Merch Status">
+              <FieldSelect 
+                value={merchStatusSelection}
+                onChange={(e) => setMerchStatusSelection(e.target.value)}
+              >
+                <option value="not sent">not sent</option>
+                <option value="pending">pending</option>
+                <option value="in transit">in transit</option>
+                <option value="received">received</option>
+                <option value="other">Other...</option>
+              </FieldSelect>
+            </FormField>
+            {merchStatusSelection === 'other' && (
+              <FormField label="Custom Status">
+                <FieldInput
+                  placeholder="Enter custom merch status"
+                  value={customMerchStatus}
+                  onChange={(e) => setCustomMerchStatus(e.target.value)}
+                />
+              </FormField>
+            )}
+            <button
+              onClick={saveMerchStatus}
+              disabled={savingMerchStatus || (merchStatusSelection === 'other' && !customMerchStatus.trim())}
+              style={{ padding: '10px', borderRadius: '10px', background: savingMerchStatus ? '#1e293b' : 'linear-gradient(135deg,#06b6d4,#14b8a6)', border: 'none', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: savingMerchStatus ? 'wait' : 'pointer', marginTop: '8px' }}
+            >
+              {savingMerchStatus ? 'Saving…' : 'Save Changes'}
+            </button>
+          </div>
+        )}
       </SlideOver>
 
       <ConfirmDialog

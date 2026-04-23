@@ -18,10 +18,13 @@ const statusBadge: Record<string, { variant: BadgeVariant; label: string }> = {
 }
 
 function getMerchBadge(s: string): { variant: BadgeVariant; label: string } {
-  if (s.startsWith('✓'))                                     return { variant: 'done', label: s }
-  if (s.includes('TBC') || s.toLowerCase().includes('tbc')) return { variant: 'tbc',  label: s }
-  if (s.includes('Not Yet'))                                 return { variant: 'risk', label: s }
-  return                                                            { variant: 'warn', label: s }
+  const lower = s.toLowerCase().trim()
+  if (lower === 'received' || lower.includes('received by chapter')) return { variant: 'done', label: s }
+  if (lower === 'in transit' || lower.includes('in transit') || lower === 'sent' || lower.includes('sent to province')) return { variant: 'warn', label: s }
+  if (lower === 'pending' || lower === 'ready to ship') return { variant: 'pending', label: s }
+  if (s.includes('TBC') || lower.includes('tbc')) return { variant: 'tbc',  label: s }
+  if (lower === 'not sent' || lower.includes('not yet sent')) return { variant: 'risk', label: s }
+  return { variant: 'warn', label: s }
 }
 
 const accentOf = (c: Chapter) =>

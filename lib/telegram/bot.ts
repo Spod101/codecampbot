@@ -360,7 +360,7 @@ async function cmdHelp(chatId: number) {
 /status — today's DSU
 /tasks [chapter?] — open tasks
 /risks [high|med|low?] — risk register
-/chapter [id] — chapter detail
+/chapter [chapter] — chapter detail
 /kpis — KPI values
 /contacts [team?] — team contacts
 /merch [jcr|lazada|shopee?] — merch items
@@ -382,16 +382,16 @@ async function cmdHelp(chatId: number) {
   <i>e.g.</i> <code>/setkpi code_camps 2</code>
 
 <b>🏕 Chapters</b>
-/setchapter [id] status [value]
-/setchapter [id] venue [text]
-/setchapter [id] lead [name]
-/setchapter [id] pax [number]
-/setchapter [id] pax_target [number|clear]
-/setchapter [id] merch [text]
-/setchapter [id] progress [0-100]
-/setchapter [id] date [YYYY-MM-DD|clear]
-/setchapter [id] display_date [text|clear]
-/setcheck [id] [item-index] [done|pending|in_progress]
+/setchapter [chapter] status [value]
+/setchapter [chapter] venue [text]
+/setchapter [chapter] lead [name]
+/setchapter [chapter] pax [number]
+/setchapter [chapter] pax_target [number|clear]
+/setchapter [chapter] merch [not_sent|pending|received|in_transit|other <text>]
+/setchapter [chapter] progress [0-100]
+/setchapter [chapter] date [YYYY-MM-DD|clear]
+/setchapter [chapter] display_date [text|clear]
+/setcheck [chapter] [item-index] [done|pending|in_progress]
   <i>e.g.</i> <code>/setchapter manila status completed</code>
 
 <b>👥 Contacts</b>
@@ -532,7 +532,7 @@ async function cmdRisks(chatId: number, filter: string, page = 0, editTarget?: {
 
 async function cmdChapter(chatId: number, id: string) {
   if (!id) {
-    await send(chatId, 'Usage: /chapter [id]\nIDs: manila · tacloban · iloilo · bukidnon · pampanga · laguna')
+    await send(chatId, 'Usage: /chapter [chapter]\nValid chapters: manila · tacloban · iloilo · bukidnon · pampanga · laguna')
     return
   }
 
@@ -619,7 +619,7 @@ async function cmdAddTask(chatId: number, args: string) {
 
   const { data: chapter } = await sb.from('chapters').select('id, name').eq('id', chapter_id).single()
   if (!chapter) {
-    await send(chatId, `Chapter <code>${chapter_id}</code> not found.\nValid IDs: manila · tacloban · iloilo · bukidnon · pampanga · laguna`)
+    await send(chatId, `Chapter <code>${chapter_id}</code> not found.\nValid chapters: manila · tacloban · iloilo · bukidnon · pampanga · laguna`)
     return
   }
 
@@ -848,11 +848,23 @@ async function cmdSetKpi(chatId: number, args: string) {
 // ─── /setchapter ────────────────────────────────────────────────────────────
 
 const VALID_CHAPTER_STATUSES = ['completed', 'rescheduling', 'in_progress', 'activating', 'pencil_booked', 'tbc']
+const CHAPTER_MERCH_STATUS_PRESETS: Record<string, string> = {
+  not_sent: 'not sent',
+  'not sent': 'not sent',
+  pending: 'pending',
+  ready: 'pending',
+  transit: 'in transit',
+  in_transit: 'in transit',
+  'in transit': 'in transit',
+  sent: 'in transit',
+  received: 'received',
+  'received by chapter': 'received',
+}
 
 async function cmdSetChapter(chatId: number, args: string) {
   const parts = args.split(/\s+/)
   if (parts.length < 3) {
-    await send(chatId, `Usage: /setchapter [id] [field] [value]
+    await send(chatId, `Usage: /setchapter [chapter] [field] [value]
 
 Fields:
   <code>status</code> — completed · rescheduling · in_progress · activating · pencil_booked · tbc
@@ -860,7 +872,7 @@ Fields:
   <code>lead</code> — lead name
   <code>pax</code>    — actual attendance number
   <code>pax_target</code> — target attendance number (or clear)
-  <code>merch</code> — merch status text
+  <code>merch</code> — not_sent · pending · in_transit · received · other [custom text]
   <code>progress</code> — 0–100
   <code>date</code> — YYYY-MM-DD or clear
   <code>display_date</code> — optional text label (or clear)
@@ -870,7 +882,10 @@ Fields:
 <i>e.g.</i> <code>/setchapter manila lead Lady Diane Casilang</code>
 <i>e.g.</i> <code>/setchapter bukidnon pax 87</code>
 <i>e.g.</i> <code>/setchapter iloilo pax_target 120</code>
-<i>e.g.</i> <code>/setchapter bukidnon merch ✓ Distributed</code>
+<i>e.g.</i> <code>/setchapter bukidnon merch pending</code>
+<i>e.g.</i> <code>/setchapter bukidnon merch in_transit</code>
+<i>e.g.</i> <code>/setchapter bukidnon merch received</code>
+<i>e.g.</i> <code>/setchapter bukidnon merch other Packed and ready for pickup</code>
 <i>e.g.</i> <code>/setchapter iloilo progress 60</code>
 <i>e.g.</i> <code>/setchapter manila date 2026-03-28</code>
 <i>e.g.</i> <code>/setchapter iloilo display_date Apr 18 (Dev Event) + May 16</code>`)
@@ -883,7 +898,7 @@ Fields:
 
   const { data: chapter } = await sb.from('chapters').select('id, name, number, date_iso, date_text').eq('id', chapterId.toLowerCase()).single()
   if (!chapter) {
-    await send(chatId, `Chapter <code>${chapterId}</code> not found.\nValid IDs: manila · tacloban · iloilo · bukidnon · pampanga · laguna`)
+    await send(chatId, `Chapter <code>${chapterId}</code> not found.\nValid chapters: manila · tacloban · iloilo · bukidnon · pampanga · laguna`)
     return
   }
 
@@ -931,8 +946,35 @@ Fields:
     case 'merch':
     case 'merch_status': {
       const text = value.trim()
-      if (!text) { await send(chatId, 'Merch status cannot be empty.'); return }
-      update.merch_status = text
+      if (!text) {
+        await send(chatId, 'Merch status cannot be empty. Use <code>not_sent</code>, <code>pending</code>, <code>in_transit</code>, <code>received</code>, or <code>other [custom text]</code>.')
+        return
+      }
+
+      const lower = text.toLowerCase()
+      if (lower === 'other') {
+        await send(chatId, 'Please add custom text: <code>/setchapter [chapter] merch other [custom text]</code>')
+        return
+      }
+
+      if (lower.startsWith('other ')) {
+        const custom = text.slice(6).trim()
+        if (!custom) {
+          await send(chatId, 'Custom merch status cannot be empty.')
+          return
+        }
+        update.merch_status = custom
+        break
+      }
+
+      const mapped = CHAPTER_MERCH_STATUS_PRESETS[lower]
+      if (mapped) {
+        update.merch_status = mapped
+        break
+      }
+
+      await send(chatId, 'Invalid merch status. Use <code>not_sent</code>, <code>pending</code>, <code>in_transit</code>, <code>received</code>, or <code>other [custom text]</code>.')
+      return
       break
     }
     case 'progress': {
@@ -983,7 +1025,10 @@ Fields:
   }
 
   const fieldLabel = field === 'pax' || field === 'pax_actual' ? 'pax_actual' : field.toLowerCase()
-  await send(chatId, `✅ <b>Ch${chapter.number} ${chapter.name}</b>\n${fieldLabel} → <code>${value}</code>`)
+  const nextValue = fieldLabel === 'merch' || fieldLabel === 'merch_status'
+    ? String(update.merch_status ?? value)
+    : value
+  await send(chatId, `✅ <b>Ch${chapter.number} ${chapter.name}</b>\n${fieldLabel} → <code>${nextValue}</code>`)
 }
 
 // ─── /setcheck ─────────────────────────────────────────────────────────────
@@ -991,7 +1036,7 @@ Fields:
 async function cmdSetChecklistActivity(chatId: number, args: string) {
   const parts = args.split(/\s+/)
   if (parts.length < 3) {
-    await send(chatId, `Usage: /setcheck [chapter-id] [item-index] [done|pending|in_progress]\n<i>e.g.</i> <code>/setcheck manila 0 done</code>`)
+    await send(chatId, `Usage: /setcheck [chapter] [item-index] [done|pending|in_progress]\n<i>e.g.</i> <code>/setcheck manila 0 done</code>`)
     return
   }
 
@@ -1008,7 +1053,7 @@ async function cmdSetChecklistActivity(chatId: number, args: string) {
   const sb = db()
   const { data: chapter } = await sb.from('chapters').select('id, number, name').eq('id', chapterId).single()
   if (!chapter) {
-    await send(chatId, `Chapter <code>${chapterId}</code> not found.\nValid IDs: manila · tacloban · iloilo · bukidnon · pampanga · laguna`)
+    await send(chatId, `Chapter <code>${chapterId}</code> not found.\nValid chapters: manila · tacloban · iloilo · bukidnon · pampanga · laguna`)
     return
   }
 
