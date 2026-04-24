@@ -467,6 +467,9 @@ export async function handleUpdate(update: unknown) {
       case 'deletecontact':return await cmdDeleteContact(chatId, rest)
       case 'merch':        return await cmdMerch(chatId, rest)
       case 'setmerch':     return await cmdSetMerch(chatId, rest)
+      case 'links':        return await cmdLinks(chatId, rest)
+      case 'addlink':      return await cmdAddLink(chatId, rest)
+      case 'editlink':     return await cmdEditLink(chatId, rest)
       default:             return await send(chatId, 'Unknown command. Use /help.')
     }
   } catch (err) {
@@ -602,6 +605,7 @@ async function cmdHelp(chatId: number) {
 /kpis — KPI values
 /contacts [team?] — team contacts
 /merch [jcr|lazada|shopee?] — merch items
+/links [category?] — resource links
 
 <b>✅ Tasks</b>  <i>(IDs like MNL-t1, TCL-t2)</i>
 /addtask [chapter] [owner] [desc]
@@ -640,7 +644,15 @@ async function cmdHelp(chatId: number) {
 <b>📦 Merch</b>
 /setmerch [id] [received|confirmed|confirm|pending]
 
-<i>Task IDs: MNL-t1, TCL-t2 etc. Risk codes: R1, R2 etc. Contact/merch: first 6 chars of UUID.</i>`)
+<b>🔗 Resource Links</b>
+/links [category?] — list links
+/addlink [category] [name] | [url] | [description?]
+/editlink [id] [field] [value] — edit name · url · description · category
+
+Categories: <code>Drive</code> · <code>Sheets</code> · <code>Docs</code> · <code>Slides</code> · <code>Forms</code> · <code>Figma</code> · <code>Notion</code> · <code>GitHub</code> · <code>Loom</code> · <code>Slack</code> · <code>Zoom</code> · <code>Finance</code> · <code>Design</code> · <code>Merch</code> · <code>Events</code> · <code>Contacts</code> · <code>General</code>
+<i>Icon &amp; colour are set automatically from category.</i>
+
+<i>Task IDs: MNL-t1, TCL-t2 etc. Risk codes: R1, R2 etc. Contact/merch/link: first 6 chars of UUID.</i>`)
 }
 
 // ─── /status ────────────────────────────────────────────────────────────────
@@ -1499,4 +1511,243 @@ Statuses: <code>received</code> · <code>confirmed</code> · <code>confirm</code
   await sb.from('merch_items').update({ status: status.toLowerCase() }).eq('id', found.result.id)
   const icon = MERCH_ICONS[found.result.category] ?? '📦'
   await send(chatId, `${icon} <b>${found.result.name}</b> → <code>${status}</code>`)
+}
+
+// ─── /links ─────────────────────────────────────────────────────────────────
+
+const VALID_LINK_CATEGORIES = [
+  'Drive', 'Sheets', 'Docs', 'Slides', 'Forms', 'Figma', 'Notion',
+  'GitHub', 'Loom', 'Slack', 'Zoom', 'Finance', 'Design', 'Merch',
+  'Events', 'Contacts', 'General',
+] as const
+
+function linkAutoIcon(category: string, url: string): string {
+  const cat = category.toLowerCase()
+  const u   = url.toLowerCase()
+  if (cat === 'drive'   || u.includes('drive.google'))  return '📁'
+  if (cat === 'sheets'  || u.includes('sheet'))         return '📊'
+  if (cat === 'docs'    || u.includes('docs.google'))   return '📄'
+  if (cat === 'slides'  || u.includes('slides'))        return '📑'
+  if (cat === 'forms'   || u.includes('forms.google'))  return '📋'
+  if (cat === 'figma'   || u.includes('figma'))         return '🎨'
+  if (cat === 'notion'  || u.includes('notion'))        return '📓'
+  if (cat === 'github'  || u.includes('github'))        return '⚙️'
+  if (cat === 'loom'    || u.includes('loom'))          return '🎬'
+  if (cat === 'slack'   || u.includes('slack'))         return '💬'
+  if (cat === 'zoom'    || u.includes('zoom'))          return '📹'
+  if (cat === 'finance')                                return '💰'
+  if (cat === 'design')                                 return '🎨'
+  if (cat === 'merch')                                  return '📦'
+  if (cat === 'events')                                 return '📅'
+  if (cat === 'contacts')                               return '👥'
+  return '🔗'
+}
+
+function linkCategoryColor(category: string): string {
+  const cat = category.toLowerCase()
+  if (cat === 'finance')                         return 'yellow'
+  if (cat === 'figma' || cat === 'design')       return 'purple'
+  if (cat === 'merch'    || cat === 'events' ||
+      cat === 'notion'   || cat === 'contacts')  return 'teal'
+  return 'blue'
+}
+
+async function cmdLinks(chatId: number, filter = '') {
+  const sb = db()
+  let query = sb
+    .from('resource_links')
+    .select('id, name, description, url, icon, category')
+    .order('name')
+
+  const trimmedFilter = filter.trim()
+  if (trimmedFilter) {
+    // Match exact category (case-insensitive) using the fixed list
+    const matched = VALID_LINK_CATEGORIES.find(
+      c => c.toLowerCase() === trimmedFilter.toLowerCase()
+    )
+    if (!matched) {
+      const catList = VALID_LINK_CATEGORIES.map(c => `<code>${c}</code>`).join(' · ')
+      await send(chatId, `Unknown category <code>${trimmedFilter}</code>.\n\nValid categories:\n${catList}`)
+      return
+    }
+    query = query.eq('category', matched)
+  }
+
+  const { data: links } = await query
+
+  if (!links?.length) {
+    await send(
+      chatId,
+      trimmedFilter
+        ? `No links found in category <b>${trimmedFilter}</b>.`
+        : '🔗 No resource links yet. Use /addlink to add one.'
+    )
+    return
+  }
+
+  const lines = links.map(l =>
+    `${l.icon || '🔗'} <b>${l.name}</b>${l.description ? `\n   <i>${l.description}</i>` : ''}\n   <a href="${l.url}">${l.url.length > 50 ? l.url.slice(0, 47) + '…' : l.url}</a> · <code>${l.category}</code>\n   ID: <code>${l.id.slice(0, 8)}</code>`
+  )
+
+  const total = lines.length
+  const PAGE = 5
+  const chunked = lines.slice(0, PAGE)
+
+  await send(
+    chatId,
+    `<b>🔗 Resource Links${trimmedFilter ? ` · ${trimmedFilter}` : ''}</b> (${total})\n\n${chunked.join('\n\n')}${
+      total > PAGE ? `\n\n<i>Showing first ${PAGE}. Filter by category: /links [category]</i>` : ''
+    }`
+  )
+}
+
+// ─── /addlink ────────────────────────────────────────────────────────────────
+
+async function cmdAddLink(chatId: number, args: string) {
+  // Format: [category] [name] | [url] | [description?]
+  const catList = VALID_LINK_CATEGORIES.map(c => `<code>${c}</code>`).join(' · ')
+
+  const pipeIdx = args.indexOf('|')
+  if (pipeIdx === -1) {
+    await send(chatId, `Usage: /addlink [category] [name] | [url] | [description?]
+
+<i>e.g.</i>
+<code>/addlink Drive Organiser Drive | https://drive.google.com/xyz | Main folder for all files</code>
+<code>/addlink Finance Budget Sheet | https://docs.google.com/xyz</code>
+
+Categories: ${catList}
+<i>Icon &amp; colour are assigned automatically.</i>`)
+    return
+  }
+
+  const beforePipe = args.slice(0, pipeIdx).trim()
+  const afterPipe  = args.slice(pipeIdx + 1).trim()
+
+  const spaceIdx = beforePipe.indexOf(' ')
+  if (spaceIdx === -1) {
+    await send(chatId, '❌ Missing name. Format: /addlink [category] [name] | [url] | [description?]')
+    return
+  }
+
+  const rawCategory = beforePipe.slice(0, spaceIdx).trim()
+  const name        = beforePipe.slice(spaceIdx + 1).trim()
+  const pipeParts   = afterPipe.split('|').map(s => s.trim())
+  const url         = pipeParts[0] ?? ''
+  const description = pipeParts[1] ?? ''
+
+  // Validate category against fixed list
+  const category = VALID_LINK_CATEGORIES.find(
+    c => c.toLowerCase() === rawCategory.toLowerCase()
+  )
+  if (!category) {
+    await send(chatId, `❌ Unknown category <code>${rawCategory}</code>.\n\nValid categories:\n${catList}`)
+    return
+  }
+
+  if (!name || !url) {
+    await send(chatId, '❌ Name and URL are required.\nFormat: /addlink [category] [name] | [url] | [description?]')
+    return
+  }
+
+  if (!url.startsWith('http')) {
+    await send(chatId, '❌ URL must start with http:// or https://')
+    return
+  }
+
+  const icon       = linkAutoIcon(category, url)
+  const icon_color = linkCategoryColor(category)
+
+  const sb = db()
+  const { data: link, error } = await sb
+    .from('resource_links')
+    .insert({ name, description, url, icon, icon_color, category })
+    .select('id, name, category')
+    .single()
+
+  if (error) { await send(chatId, `❌ ${error.message}`); return }
+
+  await send(
+    chatId,
+    `✅ Link added: ${icon} <b>${link.name}</b>\nCategory: <code>${link.category}</code>\nID: <code>${link.id.slice(0, 8)}</code>\n\nEdit with: /editlink ${link.id.slice(0, 8)} name [new name]`
+  )
+}
+
+// ─── /editlink ────────────────────────────────────────────────────────────────
+
+async function cmdEditLink(chatId: number, args: string) {
+  const catList = VALID_LINK_CATEGORIES.map(c => `<code>${c}</code>`).join(' · ')
+
+  const parts = args.split(/\s+/)
+  if (parts.length < 3) {
+    await send(chatId, `Usage: /editlink [id] [field] [value]
+
+Fields: <code>name</code> · <code>url</code> · <code>description</code> · <code>category</code>
+
+<i>e.g.</i>
+<code>/editlink abc12345 name Updated Drive Name</code>
+<code>/editlink abc12345 url https://drive.google.com/new</code>
+<code>/editlink abc12345 category Finance</code>
+
+Categories: ${catList}
+<i>Icon &amp; colour update automatically when category or URL changes.</i>
+Get IDs from /links.`)
+    return
+  }
+
+  const [prefix, field, ...rest] = parts
+  const value = rest.join(' ').trim()
+
+  if (!value) {
+    await send(chatId, '❌ Value cannot be empty.')
+    return
+  }
+
+  const VALID_FIELDS = ['name', 'url', 'description', 'category']
+  const normalizedField = field.toLowerCase()
+
+  if (!VALID_FIELDS.includes(normalizedField)) {
+    await send(chatId, `Unknown field <code>${field}</code>. Valid: name · url · description · category\n<i>Note: icon &amp; colour are set automatically.</i>`)
+    return
+  }
+
+  // Validate category against fixed list
+  let resolvedCategory: string | undefined
+  if (normalizedField === 'category') {
+    resolvedCategory = VALID_LINK_CATEGORIES.find(
+      c => c.toLowerCase() === value.toLowerCase()
+    )
+    if (!resolvedCategory) {
+      await send(chatId, `❌ Unknown category <code>${value}</code>.\n\nValid categories:\n${catList}`)
+      return
+    }
+  }
+
+  if (normalizedField === 'url' && !value.startsWith('http')) {
+    await send(chatId, '❌ URL must start with http:// or https://')
+    return
+  }
+
+  const sb = db()
+  const { data: all } = await sb.from('resource_links').select('id, name, url, category')
+  const found = await findByPrefix(all ?? [], prefix)
+
+  if ('error' in found) { await send(chatId, found.error); return }
+
+  // Use resolved (canonical-cased) category if editing category field
+  const patchValue = normalizedField === 'category' ? (resolvedCategory ?? value) : value
+  const patch: Record<string, string> = { [normalizedField]: patchValue }
+
+  // Re-derive icon and icon_color when category or url changes
+  const newCategory = normalizedField === 'category' ? patchValue : found.result.category
+  const newUrl      = normalizedField === 'url'      ? value       : found.result.url
+  patch.icon       = linkAutoIcon(newCategory, newUrl)
+  patch.icon_color = linkCategoryColor(newCategory)
+
+  const { error } = await sb.from('resource_links').update(patch).eq('id', found.result.id)
+  if (error) { await send(chatId, `❌ ${error.message}`); return }
+
+  await send(
+    chatId,
+    `✅ <b>${found.result.name}</b>\n${normalizedField} → <code>${patchValue}</code>${patch.icon !== '🔗' ? `  ${patch.icon}` : ''}`
+  )
 }

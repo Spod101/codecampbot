@@ -734,7 +734,7 @@ export default function Dashboard({ initialChapterId }: DashboardProps) {
               {activeTab === 'chapters'   && <ChaptersPanel chapters={chapters} onShowChapter={showChapter} onRefresh={refresh} />}
               {activeTab === 'risks'      && <RisksPanel risks={risks} setRisks={setRisks} onRefresh={refresh} />}
               {activeTab === 'merch'      && <MerchPanel merch_items={merchItems} chapters={chapters} onRefresh={refresh} />}
-              {activeTab === 'links'      && <LinksPanel links={links} chapters={chapters} contacts={contacts} onShowChapter={showChapter} />}
+              {activeTab === 'links'      && <LinksPanel links={links} chapters={chapters} contacts={contacts} onShowChapter={showChapter} setLinks={setLinks} onRefresh={refresh} />}
               {activeTab === 'contacts'   && <ContactsPanel contacts={contacts} onRefresh={refresh} />}
               {activeTab === 'content'    && <ContentPanel />}
               {activeTab === 'settings'   && <SettingsPanel />}
