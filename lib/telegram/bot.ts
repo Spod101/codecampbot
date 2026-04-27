@@ -19,6 +19,7 @@ type InlineKeyboardButton = { text: string; callback_data: string }
 type InlineKeyboardMarkup = { inline_keyboard: InlineKeyboardButton[][] }
 type ChecklistOverrideEntry = { date_status?: string; activity_status?: string }
 type ChecklistOverrides = Record<string, Record<string, ChecklistOverrideEntry>>
+type ChecklistTemplateItem = { tCode: string; task: string; date: string; status: string }
 
 type PageView = 'status' | 'tasks' | 'risks' | 'kpis' | 'contacts' | 'merch'
 type DsuCallbackPayload =
@@ -144,6 +145,132 @@ function parseChecklistOverrides(raw: string | null | undefined): ChecklistOverr
   }
 }
 
+// Keep this aligned with ChapterDetailPanel checklist timeline definitions.
+const CHECKLIST_TEMPLATE: Record<string, ChecklistTemplateItem[]> = {
+  manila: [
+    { tCode: 'T-35', task: 'Ocular visit - Letran Intramuros', date: 'Feb 09, 2026', status: 'done' },
+    { tCode: 'T-28', task: 'Software installation begins (3-5 hrs per lab)', date: 'Mar 7, 2026', status: 'done' },
+    { tCode: 'T-14', task: 'Installation verified and roadblocks resolved', date: 'Mar 14, 2026', status: 'done' },
+    { tCode: 'T-7', task: 'Dry run - full 4-hour rehearsal with all mentors', date: 'Mar 21, 2026', status: 'done' },
+    { tCode: 'T-3', task: 'Final logistics: passes, pax confirmation, merch packed', date: 'Mar 25, 2026', status: 'done' },
+    { tCode: 'T-0', task: 'EVENT DAY - Manila Pilot at Letran Intramuros', date: 'Mar 28, 2026', status: 'executed' },
+    { tCode: 'T+3', task: 'Log pax count, BIR receipts to Jedd, SITREP submitted', date: 'Mar 31, 2026', status: 'overdue' },
+    { tCode: 'T+7', task: 'Jedd confirms liquidation, HQ Finance updated', date: 'Apr 4, 2026', status: 'confirm' },
+    { tCode: 'OPEN', task: 'Post-pilot content update by Mike and Lady', date: 'In progress', status: 'in_progress' },
+  ],
+  tacloban: [
+    { tCode: 'OPEN', task: 'Lock new event date with LNU (must be before May 1)', date: 'Urgent', status: 'overdue' },
+    { tCode: 'OPEN', task: 'Formal ocular at LNU once date is confirmed', date: 'TBD', status: 'pending' },
+    { tCode: 'T-35', task: 'Ocular visit and lab check', date: 'TBD', status: 'upcoming' },
+    { tCode: 'T-28', task: 'Software installation begins', date: 'TBD', status: 'upcoming' },
+    { tCode: 'T-14', task: 'Installation verified and roadblocks resolved', date: 'TBD', status: 'upcoming' },
+    { tCode: 'T-7', task: 'Dry run - full 4-hour rehearsal', date: 'TBD', status: 'upcoming' },
+    { tCode: 'T-0', task: 'EVENT DAY - Tacloban Code Camp', date: 'TBD', status: 'upcoming' },
+  ],
+  iloilo: [
+    { tCode: 'T-30', task: 'Ocular at CPU Jaro - Ted to visit', date: 'Apr 16, 2026', status: 'confirm' },
+    { tCode: 'PRE', task: 'Sui-supported developer event at WVSU BINHI TBI', date: 'Apr 18, 2026', status: 'executed' },
+    { tCode: 'T-28', task: 'Software installation at CPU Jaro', date: 'Apr 18, 2026', status: 'upcoming' },
+    { tCode: 'T-14', task: 'Installation verified and roadblocks resolved', date: 'May 2, 2026', status: 'upcoming' },
+    { tCode: 'T-7', task: 'Dry run - full 4-hour rehearsal', date: 'May 9, 2026', status: 'upcoming' },
+    { tCode: 'T-3', task: 'Final logistics: passes, pax confirmation, merch packed', date: 'May 13, 2026', status: 'upcoming' },
+    { tCode: 'T-0', task: 'EVENT DAY - Iloilo Code Camp at CPU Jaro', date: 'May 16, 2026', status: 'upcoming' },
+  ],
+  bukidnon: [
+    { tCode: 'PRE', task: 'Cash advance approved, merch must ship before Apr 29', date: 'Apr 18, 2026', status: 'confirm' },
+    { tCode: 'T-7', task: 'Merch packed and shipped to Bukidnon', date: 'Apr 29, 2026', status: 'upcoming' },
+    { tCode: 'T-3', task: 'Final logistics: passes, pax confirmation, lab check', date: 'May 3, 2026', status: 'upcoming' },
+    { tCode: 'T-0', task: 'EVENT DAY - Bukidnon Code Camp at BSU', date: 'May 6, 2026', status: 'upcoming' },
+    { tCode: 'T+3', task: 'Log pax count, BIR receipts, SITREP submitted', date: 'May 9, 2026', status: 'upcoming' },
+    { tCode: 'T+7', task: 'Liquidation, HQ Finance updated', date: 'May 13, 2026', status: 'upcoming' },
+  ],
+  pampanga: [
+    { tCode: 'PRE', task: 'Formal Sui Foundation slot confirmation from Joash', date: 'Pending', status: 'confirm' },
+    { tCode: 'T-35', task: 'Ocular at CCA with formal venue visit from Joash', date: 'May 25, 2026', status: 'upcoming' },
+    { tCode: 'T-28', task: 'Software installation at CCA labs', date: 'Jun 2, 2026', status: 'upcoming' },
+    { tCode: 'T-0', task: 'EVENT DAY - Pampanga Code Camp at CCA', date: 'Jun 28, 2026', status: 'upcoming' },
+  ],
+  laguna: [
+    { tCode: 'PRE', task: 'June go/no-go decision from Dom by mid-May', date: 'May 15, 2026', status: 'pending' },
+    { tCode: 'PRE', task: 'Venue scouting by John Danmel', date: 'TBD', status: 'pending' },
+    { tCode: 'T-35', task: 'Ocular at confirmed venue', date: 'TBD', status: 'upcoming' },
+    { tCode: 'T-0', task: 'EVENT DAY - Laguna Code Camp', date: 'TBD', status: 'upcoming' },
+  ],
+}
+
+function addBusinessDaysUtc(startUtc: Date, amount: number): Date {
+  if (amount === 0) return new Date(startUtc)
+
+  const result = new Date(startUtc)
+  const step = amount > 0 ? 1 : -1
+  let remaining = Math.abs(amount)
+
+  while (remaining > 0) {
+    result.setUTCDate(result.getUTCDate() + step)
+    const day = result.getUTCDay()
+    if (day !== 0 && day !== 6) remaining -= 1
+  }
+
+  return result
+}
+
+function formatChecklistDateUtc(dateUtc: Date): string {
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: '2-digit',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(dateUtc)
+}
+
+function autoChecklistDateForOverview(eventIso: string | null, tCode: string, fallback: string): string {
+  if (!eventIso) return fallback
+
+  const base = new Date(`${eventIso}T00:00:00Z`)
+  const normalizedTCode = tCode.replace('☻', '').trim()
+  const match = normalizedTCode.match(/T\s*([+-])\s*(\d+)/i)
+
+  if (!match) {
+    if (/^T\s*-\s*0$/i.test(normalizedTCode) || /^T\s*0$/i.test(normalizedTCode)) {
+      return formatChecklistDateUtc(base)
+    }
+    return fallback
+  }
+
+  const sign = match[1] === '-' ? -1 : 1
+  const days = Number(match[2])
+  if (!Number.isFinite(days)) return fallback
+
+  const computed = addBusinessDaysUtc(base, sign * days)
+  return formatChecklistDateUtc(computed)
+}
+
+function defaultChecklistActivityStatus(templateStatus: string): string {
+  const status = templateStatus.trim().toLowerCase()
+  if (status === 'done' || status === 'executed') return 'done'
+  if (status === 'in_progress') return 'in_progress'
+  return 'pending'
+}
+
+function inferChecklistDateStatus(dateText: string, activityStatus: string): string {
+  if (activityStatus === 'done') return ''
+
+  const normalized = dateText.trim().toLowerCase()
+  if (!normalized || normalized === 'tbd' || normalized.includes('pending') || normalized.includes('in progress') || normalized.includes('urgent')) {
+    return 'pending'
+  }
+
+  const parsed = Date.parse(dateText)
+  if (Number.isNaN(parsed)) return 'pending'
+
+  const itemDate = new Date(parsed)
+  const today = new Date()
+  itemDate.setHours(0, 0, 0, 0)
+  today.setHours(0, 0, 0, 0)
+
+  return itemDate < today ? 'overdue' : 'upcoming'
+}
+
 function parseCallbackPayload(data: string): { view: PageView; page: number; filter: string } | null {
   const parts = data.split('|')
   if (parts.length !== 4 || parts[0] !== 'pg') return null
@@ -266,16 +393,42 @@ function buildDsuChaptersKeyboard(chapters: { id: string; name: string }[]): Inl
 
 export async function buildDsuOverview() {
   const sb = db()
-  const [{ data: chapters }, { data: tasks }, { data: kpis }] = await Promise.all([
-    sb.from('chapters').select('id, name, number, status, progress_percent').order('number'),
+  const [{ data: chapters }, { data: tasks }, { data: kpis }, { data: checklistRow }] = await Promise.all([
+    sb.from('chapters').select('id, name, number, status, progress_percent, date_iso, date_text, pax_actual').order('number'),
     sb.from('chapter_tasks').select('chapter_id, owner, description, status').neq('status', 'done'),
-    sb.from('kpis').select('key, value').in('key', ['code_camps', 'form_submissions', 'trained_mentors', 'confirmed_deployments', 'completion_rate', 'computer_labs']),
+    sb.from('kpis').select('key, value'),
+    sb.from('bot_settings').select('value').eq('key', 'chapter_checklist_overrides').maybeSingle(),
   ])
 
   const chapterRows = chapters ?? []
   const openTasks = tasks ?? []
   const urgentTasks = openTasks.filter(t => t.status === 'urgent')
   const kpiMap = Object.fromEntries((kpis ?? []).map(k => [k.key, k.value]))
+  const checklistOverrides = parseChecklistOverrides(checklistRow?.value)
+
+  function readKpi(candidates: string[], fallback = '–') {
+    for (const key of candidates) {
+      const value = kpiMap[key]
+      if (value != null && String(value).trim() !== '') return String(value)
+    }
+    return fallback
+  }
+
+  function weeksToGoLabel(isoDate: string | null, dateText: string) {
+    const hasDate = Boolean(isoDate) || chapterDateIsLocked(isoDate, dateText)
+    if (!hasDate || !isoDate) return 'date TBD'
+
+    const now = new Date()
+    const localNow = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Manila' }))
+    const eventDate = new Date(`${isoDate}T00:00:00+08:00`)
+    const diffMs = eventDate.getTime() - localNow.getTime()
+
+    if (diffMs <= 0) return '0 weeks to go'
+
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+    const weeks = Math.ceil(diffDays / 7)
+    return `${weeks} ${weeks === 1 ? 'week' : 'weeks'} to go`
+  }
 
   const now = new Date().toLocaleDateString('en-PH', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
@@ -291,33 +444,138 @@ export async function buildDsuOverview() {
     activating: '🟡',
   }
 
+  const chapterTaskMap = openTasks.reduce<Record<string, typeof openTasks>>((acc, task) => {
+    const key = task.chapter_id.toLowerCase()
+    if (!acc[key]) acc[key] = []
+    acc[key].push(task)
+    return acc
+  }, {})
+
   const chapterProgress = chapterRows.length
     ? chapterRows
         .map(ch => {
           const shortcut = chapterShortcut(ch.id, ch.name)
-          return `${statusIcon[ch.status] ?? '•'} <b>${shortcut}</b> ${ch.progress_percent}% · ${chapterStatusLabel(ch.status)}`
+          const displayStatusKey = ch.status === 'tbc' && chapterDateIsLocked(ch.date_iso, ch.date_text)
+            ? 'pencil_booked'
+            : ch.status
+          const status = chapterStatusLabel(displayStatusKey)
+          const weeks = displayStatusKey === 'completed' ? '' : ` (${weeksToGoLabel(ch.date_iso, ch.date_text)})`
+          const chapterTasks = chapterTaskMap[ch.id.toLowerCase()] ?? []
+          const topTask = chapterTasks.find(t => t.status === 'urgent') ?? chapterTasks[0]
+
+          const chapterId = ch.id.toLowerCase()
+          const checklistTemplate = CHECKLIST_TEMPLATE[chapterId] ?? []
+          const checklistOverrideMap = checklistOverrides[chapterId] ?? {}
+
+          const templateDerived = checklistTemplate.map((item, index) => {
+            const key = String(index)
+            const override = checklistOverrideMap[key] ?? {}
+            const activityStatus = (override.activity_status ?? defaultChecklistActivityStatus(item.status)).toLowerCase().trim()
+            const computedDate = autoChecklistDateForOverview(ch.date_iso, item.tCode, item.date)
+            const inferredDateStatus = inferChecklistDateStatus(computedDate, activityStatus)
+            const dateStatus = (override.date_status ?? inferredDateStatus).toLowerCase().trim()
+            return { task: item.task, date: computedDate, activity_status: activityStatus, date_status: dateStatus }
+          })
+
+          // Include override-only entries so manual updates are never ignored.
+          const overrideOnly = Object.entries(checklistOverrideMap)
+            .filter(([index]) => {
+              const n = Number.parseInt(index, 10)
+              return !Number.isFinite(n) || n < 0 || n >= checklistTemplate.length
+            })
+            .map(([, override]) => ({
+              task: 'Manual checklist item',
+              date: 'TBD',
+              activity_status: (override.activity_status ?? 'pending').toLowerCase().trim(),
+              date_status: (override.date_status ?? '').toLowerCase().trim(),
+            }))
+
+          const checklistEntries = [...templateDerived, ...overrideOnly]
+          const checklistCounts = checklistEntries.reduce(
+            (acc, entry) => {
+              const status = entry.activity_status ?? 'pending'
+              if (status === 'done') acc.done += 1
+              else acc.pending += 1
+              return acc
+            },
+            { done: 0, pending: 0 }
+          )
+
+          const checklistSummary = checklistEntries.length
+            ? `done ${checklistCounts.done} · pending ${checklistCounts.pending}`
+            : 'no checklist updates yet'
+
+          const upcomingChecklistItems = checklistEntries
+            .filter(entry => entry.date_status === 'upcoming' && entry.activity_status !== 'done')
+            .sort((a, b) => {
+              const ta = Date.parse(a.date)
+              const tb = Date.parse(b.date)
+              if (Number.isNaN(ta) && Number.isNaN(tb)) return 0
+              if (Number.isNaN(ta)) return 1
+              if (Number.isNaN(tb)) return -1
+              return ta - tb
+            })
+
+          const upcomingChecklistSummary = upcomingChecklistItems.length
+            ? `${upcomingChecklistItems[0].task} (${upcomingChecklistItems[0].date})`
+            : 'none'
+
+          const bullets = [
+            `• Upcoming Checklist Tasks: ${upcomingChecklistSummary}`,
+            topTask
+              ? `• Top Task: ${topTask.owner}: ${topTask.description}`
+              : '• Top Task: none open',
+            `• Checklist Progress: ${checklistSummary}`,
+          ].join('\n')
+
+          return `${statusIcon[displayStatusKey] ?? '•'} <b>${shortcut}</b> ${ch.progress_percent}% · ${status}${weeks}\n${bullets}`
         })
-        .join('\n')
+        .join('\n\n')
     : 'No chapters found.'
 
   const urgentBlock = urgentTasks.length
     ? urgentTasks
         .slice(0, 6)
-        .map(t => `🔴 <b>${t.chapter_id.toUpperCase()}</b> · <b>${t.owner}</b>: ${t.description}`)
+        .map(t => {
+          const chapter = chapterRows.find(ch => ch.id.toLowerCase() === t.chapter_id.toLowerCase())
+          const chapterCode = chapter ? chapterShortcut(chapter.id, chapter.name) : t.chapter_id.toUpperCase()
+          return `🔴 <b>${chapterCode}</b> · <b>${t.owner}</b>: ${t.description}`
+        })
         .join('\n')
     : 'None'
 
-  const text = `<b>📝 DEVCON × Sui — Morning DSU</b>
+  const nextSteps = openTasks
+    .slice()
+    .sort((a, b) => {
+      const aw = a.status === 'urgent' ? 0 : 1
+      const bw = b.status === 'urgent' ? 0 : 1
+      return aw - bw
+    })
+    .slice(0, 3)
+    .map(t => {
+      const chapter = chapterRows.find(ch => ch.id.toLowerCase() === t.chapter_id.toLowerCase())
+      const chapterCode = chapter ? chapterShortcut(chapter.id, chapter.name) : t.chapter_id.toUpperCase()
+      return `${chapterCode} · ${t.owner}: ${t.description}`
+    })
+
+  const nextStepsBlock = nextSteps.length ? nextSteps.join('\n') : 'No open tasks.'
+
+  const attendeesFromChapters = chapterRows.reduce((sum, ch) => sum + (Number.isFinite(ch.pax_actual) ? Number(ch.pax_actual) : 0), 0)
+
+  const text = `<b>Sui Build Beyond Weekly Report Recap</b>
 <i>${now}</i>
 ━━━━━━━━━━━━━━━━━━━━
 
 <b>📊 KPI Snapshot</b>
-• Code Camps: <b>${kpiMap['code_camps'] ?? '–'}</b>
-• Form Submissions: <b>${kpiMap['form_submissions'] ?? '–'}</b>
-• Mentors Trained: <b>${kpiMap['trained_mentors'] ?? '–'}</b>
-• Deployments: <b>${kpiMap['confirmed_deployments'] ?? '–'}</b>
-• Completion Rate: <b>${kpiMap['completion_rate'] ?? '–'}</b>
-• Labs Activated: <b>${kpiMap['computer_labs'] ?? '–'}</b>
+• 5 Committed Code Camps: <b>${readKpi(['code_camps'])}</b>
+• Dev Events or Secondary Code Camp Slots : <b>${readKpi(['dev_events_secondary_slots', 'dev_events_slots', 'secondary_code_camp_slots'])}</b>
+• Total Attendees: <b>${readKpi(['total_attendees', 'attendees_total'], attendeesFromChapters > 0 ? String(attendeesFromChapters) : '–')}</b>
+• Completion Form Submissions: <b>${readKpi(['form_submissions'])}</b>
+• Mentors Trained and Deployed: <b>${readKpi(['trained_mentors'])}</b>
+• Students Trained and Deployed: <b>${readKpi(['trained_students', 'students_trained', 'students_trained_deployed'])}</b>
+• Verified Vercel and Mainnet Deployments: <b>${readKpi(['confirmed_deployments', 'verified_deployments'])}</b>
+• Completion Rate: <b>${readKpi(['completion_rate'])}</b>
+• Labs Installed and Activated: <b>${readKpi(['computer_labs', 'labs_installed'])}</b>
 
 <b>🏕 Chapter Progress</b>
 ${chapterProgress}
@@ -325,7 +583,12 @@ ${chapterProgress}
 <b>✅ Urgent Tasks</b> (${urgentTasks.length} urgent · ${openTasks.length} total open)
 ${urgentBlock}
 
-<i>Tap a chapter shortcut below for detailed chapter status.</i>`
+<b>KEY NEXT STEPS FOR HQ & COHORT 4:</b>
+${nextStepsBlock}
+
+<i>Tap a chapter shortcut below for detailed chapter status.</i>
+<b>🌐 Full Dashboard:</b>
+<a href="https://codecampbot.vercel.app/">https://codecampbot.vercel.app/</a>`
 
   const keyboard = buildDsuChaptersKeyboard(chapterRows)
   return { text, keyboard }
