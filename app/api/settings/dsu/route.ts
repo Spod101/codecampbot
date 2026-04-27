@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { buildDsuMessage } from '@/lib/telegram/dsu'
+import { buildDsuOverview } from '@/lib/telegram/bot'
 
 function db() {
   return createClient(
@@ -22,8 +22,8 @@ async function getSettings() {
 
 // GET — preview DSU message
 export async function GET() {
-  const text = await buildDsuMessage()
-  return NextResponse.json({ ok: true, text })
+  const overview = await buildDsuOverview()
+  return NextResponse.json({ ok: true, text: overview.text, keyboard: overview.keyboard })
 }
 
 // POST — send DSU now
@@ -32,14 +32,15 @@ export async function POST() {
   if (!token)  return NextResponse.json({ ok: false, error: 'No bot token configured' }, { status: 400 })
   if (!chatId) return NextResponse.json({ ok: false, error: 'No chat ID configured' }, { status: 400 })
 
-  const text = await buildDsuMessage()
+  const overview = await buildDsuOverview()
   const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       chat_id: chatId,
-      text,
+      text: overview.text,
       parse_mode: 'HTML',
+      reply_markup: overview.keyboard,
     }),
   })
   const data = await res.json()

@@ -264,7 +264,7 @@ function buildDsuChaptersKeyboard(chapters: { id: string; name: string }[]): Inl
   return { inline_keyboard: rows }
 }
 
-async function buildDsuOverview() {
+export async function buildDsuOverview() {
   const sb = db()
   const [{ data: chapters }, { data: tasks }, { data: kpis }] = await Promise.all([
     sb.from('chapters').select('id, name, number, status, progress_percent').order('number'),

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { unstable_noStore } from 'next/cache'
-import { buildDsuMessage } from '@/lib/telegram/dsu'
+import { buildDsuOverview } from '@/lib/telegram/bot'
 
 const noStoreFetch: typeof fetch = (input, init) => {
   return fetch(input, {
@@ -100,15 +100,16 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: true, skipped: 'already_sent_today' })
   }
 
-  const text = await buildDsuMessage()
+  const overview = await buildDsuOverview()
 
   const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       chat_id: chatId,
-      text,
+      text: overview.text,
       parse_mode: 'HTML',
+      reply_markup: overview.keyboard,
     }),
   })
 
