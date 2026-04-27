@@ -21,21 +21,6 @@ function db() {
   )
 }
 
-function getManilaDateKey() {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Manila',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(new Date())
-
-  const year = parts.find(p => p.type === 'year')?.value ?? '0000'
-  const month = parts.find(p => p.type === 'month')?.value ?? '00'
-  const day = parts.find(p => p.type === 'day')?.value ?? '00'
-
-  return `${year}-${month}-${day}`
-}
-
 async function getSettings() {
   const supabase = db()
   const { data } = await supabase.from('bot_settings').select('key, value')
@@ -49,25 +34,6 @@ async function getSettings() {
   }
 }
 
-async function tryAcquireDailySendLock(dateKey: string) {
-  const supabase = db()
-  const { error } = await supabase.from('bot_settings').insert({
-    key: `dsu_sent_${dateKey}`,
-    value: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  })
-
-  if (!error) return { acquired: true as const }
-  if (error.code === '23505') return { acquired: false as const }
-
-  return { acquired: false as const, error: error.message }
-}
-
-async function releaseDailySendLock(dateKey: string) {
-  const supabase = db()
-  await supabase.from('bot_settings').delete().eq('key', `dsu_sent_${dateKey}`)
-}
-
 function isAuthorizedCronRequest(req: Request) {
   const expected = process.env.CRON_SECRET
   if (!expected) return true
@@ -77,6 +43,19 @@ function isAuthorizedCronRequest(req: Request) {
 
   const url = new URL(req.url)
   return url.searchParams.get('secret') === expected
+}
+
+function getManilaTimestamp() {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Manila',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).format(new Date())
 }
 
 export async function GET(req: Request) {
@@ -90,15 +69,6 @@ export async function GET(req: Request) {
   if (!autoStandup) return NextResponse.json({ ok: true, skipped: 'auto_standup_disabled' })
   if (!token) return NextResponse.json({ ok: false, error: 'No bot token configured' }, { status: 400 })
   if (!chatId) return NextResponse.json({ ok: false, error: 'No chat ID configured' }, { status: 400 })
-
-  const dateKey = getManilaDateKey()
-  const lock = await tryAcquireDailySendLock(dateKey)
-  if (!lock.acquired) {
-    if ('error' in lock) {
-      return NextResponse.json({ ok: false, error: lock.error }, { status: 500 })
-    }
-    return NextResponse.json({ ok: true, skipped: 'already_sent_today' })
-  }
 
   const overview = await buildDsuOverview()
 
@@ -116,9 +86,11 @@ export async function GET(req: Request) {
   const result = await res.json()
 
   if (!result.ok) {
-    await releaseDailySendLock(dateKey)
-    return NextResponse.json({ error: result.description }, { status: 500 })
+    return NextResponse.json(
+      { ok: false, error: result.description, timeZone: 'Asia/Manila', manilaTime: getManilaTimestamp() },
+      { status: 500 }
+    )
   }
 
-  return NextResponse.json({ ok: true })
+  return NextResponse.json({ ok: true, timeZone: 'Asia/Manila', manilaTime: getManilaTimestamp() })
 }
