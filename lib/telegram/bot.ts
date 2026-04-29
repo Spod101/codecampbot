@@ -377,6 +377,19 @@ async function sendOrEdit(
   await send(chatId, text, replyMarkup)
 }
 
+function sortChaptersForDsu<T extends { status: string; date_iso: string | null }>(rows: T[]): T[] {
+  const active = rows.filter(c => c.status !== 'completed' && c.status !== 'tbc' && c.status !== 'rescheduling')
+  const tbc = rows.filter(c => c.status === 'tbc' || c.status === 'rescheduling')
+  const done = rows.filter(c => c.status === 'completed')
+  active.sort((a, b) => {
+    if (a.date_iso && b.date_iso) return a.date_iso.localeCompare(b.date_iso)
+    if (a.date_iso) return -1
+    if (b.date_iso) return 1
+    return 0
+  })
+  return [...active, ...tbc, ...done]
+}
+
 function buildDsuChaptersKeyboard(chapters: { id: string; name: string }[]): InlineKeyboardMarkup {
   const buttons = chapters.map(ch => ({
     text: chapterShortcut(ch.id, ch.name),
@@ -400,7 +413,7 @@ export async function buildDsuOverview() {
     sb.from('bot_settings').select('value').eq('key', 'chapter_checklist_overrides').maybeSingle(),
   ])
 
-  const chapterRows = chapters ?? []
+  const chapterRows = sortChaptersForDsu(chapters ?? [])
   const openTasks = tasks ?? []
   const urgentTasks = openTasks.filter(t => t.status === 'urgent')
   const kpiMap = Object.fromEntries((kpis ?? []).map(k => [k.key, k.value]))

@@ -55,6 +55,19 @@ export async function buildDsuMessage(): Promise<string> {
 
   const kpiMap = Object.fromEntries((kpis ?? []).map(k => [k.key, k.value]))
 
+  function sortChapters<T extends { status: string; date_iso: string | null }>(rows: T[]): T[] {
+    const active = rows.filter(c => c.status !== 'completed' && c.status !== 'tbc' && c.status !== 'rescheduling')
+    const tbc = rows.filter(c => c.status === 'tbc' || c.status === 'rescheduling')
+    const done = rows.filter(c => c.status === 'completed')
+    active.sort((a, b) => {
+      if (a.date_iso && b.date_iso) return a.date_iso.localeCompare(b.date_iso)
+      if (a.date_iso) return -1
+      if (b.date_iso) return 1
+      return 0
+    })
+    return [...active, ...tbc, ...done]
+  }
+
   const now = new Date().toLocaleDateString('en-PH', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
     timeZone: 'Asia/Manila',
@@ -74,7 +87,7 @@ export async function buildDsuMessage(): Promise<string> {
     pencil_booked: '📌', tbc: '🟣', activating: '🟡',
   }
 
-  const chapterBlock = (chapters ?? [])
+  const chapterBlock = sortChapters(chapters ?? [])
     .map(c => {
       const date = c.status === 'completed' ? 'Done' : chapterDateForDisplay(c.date_iso, c.date_text)
       return `${statusIcon[c.status] ?? '•'} Ch${c.number} <b>${c.name}</b> — ${date} (${c.progress_percent}%)`
