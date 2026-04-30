@@ -121,9 +121,9 @@ function formatDateIsoForDisplay(isoDate: string | null): string {
   }).format(date)
 }
 
-function chapterDateForDisplay(isoDate: string | null, dateText: string): string {
+function chapterDateForDisplay(isoDate: string | null, dateText: string | null): string {
   const primary = formatDateIsoForDisplay(isoDate)
-  const secondary = dateText.trim()
+  const secondary = (dateText ?? '').trim()
 
   if (primary && secondary && secondary !== primary) {
     return `${primary} (${secondary})`
@@ -321,9 +321,9 @@ function chapterStatusLabel(status: string): string {
   return status.replace(/_/g, ' ')
 }
 
-function chapterDateIsLocked(isoDate: string | null, dateText: string): boolean {
+function chapterDateIsLocked(isoDate: string | null, dateText: string | null): boolean {
   if (isoDate) return true
-  const normalized = dateText.trim().toLowerCase()
+  const normalized = (dateText ?? '').trim().toLowerCase()
   if (!normalized) return false
   if (normalized.includes('tbd') || normalized.includes('tbc')) return false
   return true
@@ -760,56 +760,53 @@ async function handleCallbackQuery(cb: TgCallbackQuery) {
     return
   }
 
-  const dsuPayload = parseDsuCallbackPayload(cb.data)
-  if (dsuPayload) {
-    const chatId: number = cb.message.chat.id
-    const messageId: number = cb.message.message_id
-
-    if (dsuPayload.kind === 'overview') {
-      const overview = await buildDsuOverview()
-      await sendOrEdit(chatId, overview.text, overview.keyboard, { messageId })
-    } else {
-      const detail = await buildChapterDetailStatus(dsuPayload.chapterId)
-      await sendOrEdit(chatId, detail.text, detail.keyboard, { messageId })
-    }
-
-    await answerCallbackQuery(cb.id)
-    return
-  }
-
-  const payload = parseCallbackPayload(cb.data)
-  if (!payload) {
-    await answerCallbackQuery(cb.id)
-    return
-  }
-
   const chatId: number = cb.message.chat.id
   const messageId: number = cb.message.message_id
 
-  switch (payload.view) {
-    case 'status':
-      await cmdStatusDashboard(chatId, payload.page, { messageId })
-      break
-    case 'tasks':
-      await cmdTasks(chatId, payload.filter, payload.page, { messageId })
-      break
-    case 'risks':
-      await cmdRisks(chatId, payload.filter, payload.page, { messageId })
-      break
-    case 'kpis':
-      await cmdKpis(chatId, payload.page, { messageId })
-      break
-    case 'contacts':
-      await cmdContacts(chatId, payload.filter, payload.page, { messageId })
-      break
-    case 'merch':
-      await cmdMerch(chatId, payload.filter, payload.page, { messageId })
-      break
-    default:
-      break
-  }
+  try {
+    const dsuPayload = parseDsuCallbackPayload(cb.data)
+    if (dsuPayload) {
+      if (dsuPayload.kind === 'overview') {
+        const overview = await buildDsuOverview()
+        await sendOrEdit(chatId, overview.text, overview.keyboard, { messageId })
+      } else {
+        const detail = await buildChapterDetailStatus(dsuPayload.chapterId)
+        await sendOrEdit(chatId, detail.text, detail.keyboard, { messageId })
+      }
+      return
+    }
 
-  await answerCallbackQuery(cb.id)
+    const payload = parseCallbackPayload(cb.data)
+    if (!payload) return
+
+    switch (payload.view) {
+      case 'status':
+        await cmdStatusDashboard(chatId, payload.page, { messageId })
+        break
+      case 'tasks':
+        await cmdTasks(chatId, payload.filter, payload.page, { messageId })
+        break
+      case 'risks':
+        await cmdRisks(chatId, payload.filter, payload.page, { messageId })
+        break
+      case 'kpis':
+        await cmdKpis(chatId, payload.page, { messageId })
+        break
+      case 'contacts':
+        await cmdContacts(chatId, payload.filter, payload.page, { messageId })
+        break
+      case 'merch':
+        await cmdMerch(chatId, payload.filter, payload.page, { messageId })
+        break
+      default:
+        break
+    }
+  } catch (err) {
+    console.error('[TelegramBot] callback error:', err)
+    try { await send(chatId, `⚠️ ${normalizeBotError(err)}`) } catch {}
+  } finally {
+    await answerCallbackQuery(cb.id)
+  }
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
